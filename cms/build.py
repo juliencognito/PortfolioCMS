@@ -5,11 +5,11 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .config import Config
-from .models import Article, Home, Page, SiteCss, SiteSeo, Tag, db
+from .git_publish import effective_base_url
+from .models import Article, GitConfig, Home, Page, SiteCss, SiteSeo, Tag, db
 from .public_render import Linker, paragraphs, public_context, seo_meta
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 def _jinja_env() -> Environment:
@@ -49,12 +49,14 @@ def build(app) -> Path:
 
         home = db.session.get(Home, 1) or Home(titre="", presentation="")
         seo = db.session.get(SiteSeo, 1)
-        base_url = seo.base_url if seo else ""
+        css_row = db.session.get(SiteCss, 1)
+        cfg = db.session.get(GitConfig, 1)
+        base_url = effective_base_url(seo, cfg)
         nav_tags = Tag.query.order_by(Tag.ordre, Tag.nom).all()
         nav_pages = Page.query.order_by(Page.ordre, Page.id).all()
 
         def ctx(depth):
-            return public_context(Linker("build", depth), home, nav_tags, nav_pages, seo)
+            return public_context(Linker("build", depth), home, nav_tags, nav_pages, seo, css_row)
 
         # root-relative paths of every page, collected for sitemap.xml (only
         # meaningful once a public base_url is configured, see docs/app.md)
@@ -86,13 +88,13 @@ def build(app) -> Path:
                 env.get_template("public/tag.html").render(**tag_ctx, tag=tag),
             )
 
-        # article pages — projet/<slug>.html (depth 1)
+        # article pages — projets/<slug>.html (depth 1)
         for article in articles:
             article_ctx = ctx(1)
-            article_ctx.update(page_seo(article_ctx["link"], f"projet/{article.slug}.html", title=article.titre,
+            article_ctx.update(page_seo(article_ctx["link"], f"projets/{article.slug}.html", title=article.titre,
                                          description_source=article.texte, image=article.image))
             _write(
-                tmp / "projet" / f"{article.slug}.html",
+                tmp / "projets" / f"{article.slug}.html",
                 env.get_template("public/article.html").render(**article_ctx, article=article),
             )
 
@@ -106,11 +108,9 @@ def build(app) -> Path:
                 env.get_template("public/page.html").render(**page_ctx, page=page),
             )
 
-        # CSS (from SiteCss) + self-hosted fonts
+        # CSS (from SiteCss; fonts are loaded from Bunny CDN, see cms/fonts.py)
         (tmp / "static").mkdir(parents=True, exist_ok=True)
-        css_row = db.session.get(SiteCss, 1)
         (tmp / "static" / "public.css").write_text(css_row.contenu if css_row else "", encoding="utf-8")
-        shutil.copytree(STATIC_DIR / "fonts", tmp / "static" / "fonts")
 
         # media (images + thumbnails)
         media_dst = tmp / "media"

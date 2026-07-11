@@ -20,7 +20,15 @@
   <meta name="twitter:card" content="{{ 'summary_large_image' if meta_image_url else 'summary' }}">
   {% if seo and seo.twitter_handle %}<meta name="twitter:site" content="{{ seo.twitter_handle }}">{% endif %}
 
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link rel="stylesheet" href="{{ fonts_css_url }}">
   <link rel="stylesheet" href="{{ link.css() }}">
+  <style>
+    :root{--font-title:{{ font_title_stack | safe }};--font-body:{{ font_body_stack | safe }};}
+    @keyframes fade-in{from{opacity:0}to{opacity:1}}
+    body{animation:fade-in .18s ease-in}
+    @media (prefers-reduced-motion:reduce){body{animation:none}}
+  </style>
 </head>
 <body>
   <header class="site-header">

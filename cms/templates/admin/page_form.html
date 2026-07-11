@@ -1,5 +1,6 @@
 {% extends "admin/base.html" %}
 {% from "admin/_toolbar.html" import toolbar %}
+{% from "admin/_image_pool.html" import image_pool %}
 {% block title %}{{ "Éditer la page" if page else "Nouvelle page" }}{% endblock %}
 {% block content %}
 <div class="card">
@@ -8,32 +9,15 @@
     <label for="titre">Titre</label>
     <input id="titre" name="titre" type="text" value="{{ page.titre if page else '' }}" required>
 
-    <label for="image">Image (peut être vide)</label>
-    {% if page and page.image %}
-      <div class="thumbs"><figure><img src="{{ url_for('uploads', filename=img_variant(page.image, 'small')) }}" alt=""></figure></div>
-      <p class="muted" style="font-size:.85rem;">Charger un fichier remplace l'image actuelle.</p>
-    {% endif %}
-    <input id="image" name="image" type="file" accept="image/*">
-
     <label for="texte">Texte</label>
-    {{ toolbar('texte', url_for('page_texte_image', pid=page.id) if page else None) }}
+    {{ toolbar('texte') }}
     <textarea id="texte" name="texte">{{ page.texte if page else '' }}</textarea>
-    <p class="editor-hint">Sélectionne du texte puis clique un bouton — ou écris directement **gras**, *italique*, ++souligné++, `code`, ### titre (h3-h5), --- séparateur, 🖼 insère une image (page déjà enregistrée uniquement).</p>
+    <p class="editor-hint">Sélectionne du texte puis clique un bouton.</p>
 
-    <label for="gallery">Galerie — dossier d'images (sélection multiple)</label>
-    <input id="gallery" name="gallery" type="file" accept="image/*" multiple>
-
-    {% if page and page.gallery|rejectattr('en_texte')|list %}
-      <div class="thumbs">
-        {% for g in page.gallery|rejectattr('en_texte') %}
-          <figure>
-            <img src="{{ url_for('uploads', filename=img_variant(g.filename, 'small')) }}" alt="">
-            <button class="btn btn-danger" style="padding:.15rem .4rem; font-size:.75rem; margin-top:.3rem; width:100%;"
-              type="submit" formaction="{{ url_for('gallery_delete', gid=g.id) }}" formmethod="post" formnovalidate
-              onclick="return confirm('Retirer cette image ?');">Retirer</button>
-          </figure>
-        {% endfor %}
-      </div>
+    {% if page %}
+      {{ image_pool(page.gallery, url_for('page_images_upload', pid=page.id), 'texte', current_cover=page.image) }}
+    {% else %}
+      <p class="editor-hint">Les images (couverture, galerie, insertion dans le texte) se gèrent après un premier enregistrement.</p>
     {% endif %}
 
     <label for="ordre">Ordre dans la navigation</label>

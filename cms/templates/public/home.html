@@ -1,10 +1,18 @@
 {% extends "public/base.html" %}
 {% from "public/_cards.html" import card_grid %}
+{% from "public/_gallery.html" import gallery_lightbox %}
 {% block content %}
   <section class="intro">
     <h1>{{ home.titre }}</h1>
+    {% if home.image %}
+      <figure class="page-cover">
+        <img src="{{ link.media(home.image, size='large') }}" alt="{{ home.titre }}">
+      </figure>
+    {% endif %}
     {% if home.presentation %}<div class="prose">{{ home.presentation | paragraphs(link) }}</div>{% endif %}
   </section>
 
-  {{ card_grid(articles, link) }}
+  {% if home.afficher_projets %}{{ card_grid(articles, link) }}{% endif %}
+
+  {{ gallery_lightbox(home.gallery|rejectattr('en_texte')|list, home.titre, link) }}
 {% endblock %}

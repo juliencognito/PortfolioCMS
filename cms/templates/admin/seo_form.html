@@ -1,10 +1,14 @@
 {% extends "admin/base.html" %}
-{% block title %}SEO{% endblock %}
+{% block title %}Site{% endblock %}
 {% block content %}
 <div class="card">
-  <h1>Référencement (SEO)</h1>
-  <p class="muted">Réglages globaux uniquement : chaque page utilise déjà son propre titre/texte/image pour sa description et son image de partage — pas de champ SEO par article.</p>
+  <h1>Site</h1>
+  <p class="muted">Réglages globaux : identité du site et référencement. Chaque page utilise déjà son propre titre/texte/image pour sa description et son image de partage — pas de champ SEO par article.</p>
   <form method="post" enctype="multipart/form-data">
+
+    <label for="site_titre">Titre du site</label>
+    <input id="site_titre" name="site_titre" type="text" value="{{ home.site_titre }}">
+    <p class="editor-hint">Affiché dans l'onglet du navigateur, l'en-tête et le pied de page de toutes les pages.</p>
 
     <label for="base_url">URL publique du site</label>
     <input id="base_url" name="base_url" type="text" placeholder="https://mon-site.gitlab.io/portfolio" value="{{ seo.base_url }}">

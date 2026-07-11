@@ -3,14 +3,16 @@ import re
 
 from markupsafe import Markup, escape
 
+from .fonts import DEFAULT_FONT_BODY, DEFAULT_FONT_TITLE, bunny_css_url, font_stack
 from .images import variant_name
 
 # minimal markup (not full Markdown): **bold**, *italic*, ++underline++,
-# `code`, ### / #### / ##### (h3-h5), --- (hr)
+# `code`, [texte](url), ### / #### / ##### (h3-h5), --- (hr)
 _BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
 _UNDERLINE_RE = re.compile(r"\+\+(.+?)\+\+")
 _ITALIC_RE = re.compile(r"\*(.+?)\*")
 _CODE_RE = re.compile(r"`(.+?)`")
+_LINK_RE = re.compile(r"\[(.+?)\]\((.+?)\)")
 _HEADING_RE = re.compile(r"^(#{3,5})\s+(.*)$", re.DOTALL)
 _HR_RE = re.compile(r"^-{3,}$")
 _IMAGE_RE = re.compile(r"^\[\[image:(.+?)\]\]$")
@@ -36,8 +38,8 @@ class Linker:
 
     def article(self, article) -> str:
         if self.mode == "preview":
-            return f"/preview/projet/{article.slug}"
-        return self._up + f"projet/{article.slug}.html"
+            return f"/preview/projets/{article.slug}"
+        return self._up + f"projets/{article.slug}.html"
 
     def page(self, page) -> str:
         if self.mode == "preview":
@@ -68,7 +70,9 @@ class Linker:
 
 
 def _inline_markup(line: str) -> str:
-    """Apply bold/italic/underline/code to an already-escaped line."""
+    """Apply link/bold/italic/underline/code to an already-escaped line.
+    Link runs first so `**bold**` inside link text still gets processed."""
+    line = _LINK_RE.sub(r'<a href="\2" target="_blank" rel="noopener">\1</a>', line)
     line = _CODE_RE.sub(r"<code>\1</code>", line)
     line = _BOLD_RE.sub(r"<strong>\1</strong>", line)
     line = _UNDERLINE_RE.sub(r"<u>\1</u>", line)
@@ -101,14 +105,19 @@ def paragraphs(text: str, link: "Linker") -> Markup:
     return Markup("".join(_render_block(b, link) for b in blocks))
 
 
-def public_context(link: Linker, home, nav_tags, nav_pages, seo=None) -> dict:
+def public_context(link: Linker, home, nav_tags, nav_pages, seo=None, css=None) -> dict:
     """Common context injected into every public template."""
+    font_title = (css.font_title if css else None) or DEFAULT_FONT_TITLE
+    font_body = (css.font_body if css else None) or DEFAULT_FONT_BODY
     return {
         "link": link,
         "home": home,
         "nav_tags": nav_tags,
         "nav_pages": nav_pages,
         "seo": seo,
+        "fonts_css_url": bunny_css_url(font_title, font_body),
+        "font_title_stack": font_stack(font_title),
+        "font_body_stack": font_stack(font_body),
     }
 
 
@@ -120,7 +129,8 @@ def plain_summary(text: str, max_len: int = 160) -> str:
     first_block = text.replace("\r\n", "\n").split("\n\n", 1)[0].strip()
     if _IMAGE_RE.match(first_block) or _HR_RE.match(first_block) or _HEADING_RE.match(first_block):
         return ""
-    plain = _CODE_RE.sub(r"\1", first_block)
+    plain = _LINK_RE.sub(r"\1", first_block)
+    plain = _CODE_RE.sub(r"\1", plain)
     plain = _BOLD_RE.sub(r"\1", plain)
     plain = _UNDERLINE_RE.sub(r"\1", plain)
     plain = _ITALIC_RE.sub(r"\1", plain)

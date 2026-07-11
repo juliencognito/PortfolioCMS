@@ -1,20 +1,26 @@
 {% extends "admin/base.html" %}
 {% from "admin/_toolbar.html" import toolbar %}
+{% from "admin/_image_pool.html" import image_pool %}
 {% block title %}Accueil{% endblock %}
 {% block content %}
 <div class="card">
   <h1>Page d'accueil</h1>
-  <form method="post">
-    <label for="site_titre">Titre du site</label>
-    <input id="site_titre" name="site_titre" type="text" value="{{ home.site_titre }}">
-    <p class="editor-hint">Affiché dans l'onglet du navigateur, l'en-tête et le pied de page de toutes les pages.</p>
+  <form method="post" enctype="multipart/form-data">
     <label for="titre">Titre de la page d'accueil</label>
     <input id="titre" name="titre" type="text" value="{{ home.titre }}">
     <p class="editor-hint">Affiché uniquement en haut de la page d'accueil.</p>
     <label for="presentation">Présentation (peut être vide)</label>
     {{ toolbar('presentation') }}
     <textarea id="presentation" name="presentation">{{ home.presentation }}</textarea>
-    <p class="editor-hint">Sélectionne du texte puis clique un bouton — ou écris directement **gras**, *italique*, ++souligné++, `code`, ### titre (h3-h5), --- séparateur.</p>
+    <p class="editor-hint">Sélectionne du texte puis clique un bouton.</p>
+
+    <label class="checklist-item" style="margin-top:1rem;">
+      <input type="checkbox" name="afficher_projets" {% if home.afficher_projets %}checked{% endif %}>
+      Afficher la liste des projets sur la page d'accueil
+    </label>
+
+    {{ image_pool(home.gallery, url_for('home_images_upload'), 'presentation', current_cover=home.image) }}
+
     <div class="row" style="margin-top:1.25rem;">
       <button class="btn btn-primary" type="submit">Enregistrer</button>
       <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Annuler</a>

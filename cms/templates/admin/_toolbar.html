@@ -1,16 +1,13 @@
-{% macro toolbar(textarea_id, image_upload_url=None) %}
+{% macro toolbar(textarea_id) %}
 <div class="editor-toolbar">
   <button type="button" title="Gras (**texte**)" onclick="wrapSelection('{{ textarea_id }}', '**')"><strong>G</strong></button>
   <button type="button" title="Italique (*texte*)" onclick="wrapSelection('{{ textarea_id }}', '*')"><em>I</em></button>
   <button type="button" title="Souligné (++texte++)" onclick="wrapSelection('{{ textarea_id }}', '++')"><u>S</u></button>
   <button type="button" title="Code (`texte`)" onclick="wrapSelection('{{ textarea_id }}', '`')"><code>&lt;/&gt;</code></button>
+  <button type="button" title="Lien" onclick="insertLink('{{ textarea_id }}')">🔗</button>
   <button type="button" title="Titre niveau 3 (### texte)" onclick="insertHeading('{{ textarea_id }}', 3)">H3</button>
   <button type="button" title="Titre niveau 4 (#### texte)" onclick="insertHeading('{{ textarea_id }}', 4)">H4</button>
   <button type="button" title="Titre niveau 5 (##### texte)" onclick="insertHeading('{{ textarea_id }}', 5)">H5</button>
   <button type="button" title="Séparateur horizontal (---)" onclick="insertBlock('{{ textarea_id }}', '---')">―</button>
-  {% if image_upload_url %}
-    <button type="button" title="Insérer une image" onclick="document.getElementById('{{ textarea_id }}-image-file').click()">🖼</button>
-    <input type="file" id="{{ textarea_id }}-image-file" accept="image/*" style="display:none" data-upload-url="{{ image_upload_url }}">
-  {% endif %}
 </div>
 {% endmacro %}

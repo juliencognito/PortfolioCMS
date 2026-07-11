@@ -17,7 +17,7 @@
   <p class="muted">{{ home.titre if home else "—" }}</p>
 </div>
 
-<div class="card">
+<div class="card" id="articles">
   <div class="row" style="justify-content:space-between;">
     <h2>Articles / projets</h2>
     <a class="btn btn-primary" href="{{ url_for('article_edit') }}">+ Nouvel article</a>
@@ -45,7 +45,7 @@
   </table>
 </div>
 
-<div class="card">
+<div class="card" id="tags">
   <div class="row" style="justify-content:space-between;">
     <h2>Tags / catégories</h2>
     <a class="btn btn-primary" href="{{ url_for('tag_edit') }}">+ Nouveau tag</a>
@@ -73,7 +73,7 @@
   </table>
 </div>
 
-<div class="card">
+<div class="card" id="pages">
   <div class="row" style="justify-content:space-between;">
     <h2>Pages libres</h2>
     <a class="btn btn-primary" href="{{ url_for('page_edit') }}">+ Nouvelle page</a>

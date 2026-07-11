@@ -1,4 +1,5 @@
 {% extends "public/base.html" %}
+{% from "public/_gallery.html" import gallery_lightbox %}
 {% block title %}{{ article.titre }} — {{ home.site_titre }}{% endblock %}
 {% block content %}
   <article class="project">
@@ -15,56 +16,6 @@
 
     {% if article.texte %}<div class="prose">{{ article.texte | paragraphs(link) }}</div>{% endif %}
 
-    {% if article.gallery|rejectattr('en_texte')|list %}
-      <ul class="gallery">
-        {% for g in article.gallery|rejectattr('en_texte') %}
-          <li>
-            <a href="{{ link.media(g.filename, size='large') }}">
-              <img src="{{ link.media(g.filename, size='small') }}" alt="{{ article.titre }}" loading="lazy">
-            </a>
-          </li>
-        {% endfor %}
-      </ul>
-
-      <dialog class="lightbox" id="lightbox">
-        <button type="button" class="lightbox-close" aria-label="Fermer">&times;</button>
-        <button type="button" class="lightbox-prev" aria-label="Image précédente">&#8249;</button>
-        <img alt="">
-        <button type="button" class="lightbox-next" aria-label="Image suivante">&#8250;</button>
-      </dialog>
-
-      <script>
-        (function () {
-          var links = Array.from(document.querySelectorAll(".gallery a"));
-          var dialog = document.getElementById("lightbox");
-          var img = dialog.querySelector("img");
-          var index = 0;
-
-          function show(i) {
-            index = (i + links.length) % links.length;
-            img.src = links[index].href;
-          }
-
-          links.forEach(function (a, i) {
-            a.addEventListener("click", function (e) {
-              e.preventDefault();
-              show(i);
-              dialog.showModal();
-            });
-          });
-
-          dialog.querySelector(".lightbox-prev").addEventListener("click", function () { show(index - 1); });
-          dialog.querySelector(".lightbox-next").addEventListener("click", function () { show(index + 1); });
-          dialog.querySelector(".lightbox-close").addEventListener("click", function () { dialog.close(); });
-          dialog.addEventListener("click", function (e) {
-            if (e.target === dialog) dialog.close();
-          });
-          dialog.addEventListener("keydown", function (e) {
-            if (e.key === "ArrowLeft") show(index - 1);
-            if (e.key === "ArrowRight") show(index + 1);
-          });
-        })();
-      </script>
-    {% endif %}
+    {{ gallery_lightbox(article.gallery|rejectattr('en_texte')|list, article.titre, link) }}
   </article>
 {% endblock %}

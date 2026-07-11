@@ -1,0 +1,17 @@
+{% macro image_pool(gallery, upload_url, textarea_id, current_cover=None, cover_required=False) %}
+<label>Images</label>
+<input type="file" accept="image/*" multiple data-pool-upload-url="{{ upload_url }}" data-pool-target="pool-{{ textarea_id }}">
+<div class="image-pool" id="pool-{{ textarea_id }}" data-textarea="{{ textarea_id }}" data-cover-field="cover_image" data-gallery-field="in_gallery">
+  {% for g in gallery %}
+    <figure class="pool-item">
+      <img src="{{ url_for('uploads', filename=img_variant(g.filename, 'small')) }}" alt="">
+      <label class="pool-radio"><input type="radio" name="cover_image" value="{{ g.filename }}"{% if current_cover == g.filename %} checked{% endif %}> Couverture</label>
+      <label class="pool-check"><input type="checkbox" name="in_gallery" value="{{ g.filename }}"{% if not g.en_texte %} checked{% endif %}> Galerie</label>
+      <button type="button" class="btn btn-ghost" onclick="insertBlock('{{ textarea_id }}', '[[image:{{ g.filename }}]]')">Insérer dans le texte</button>
+      <button class="btn btn-danger" type="submit" formaction="{{ url_for('gallery_delete', gid=g.id) }}" formmethod="post" formnovalidate
+        onclick="return confirm('Retirer cette image ?');">Retirer</button>
+    </figure>
+  {% endfor %}
+</div>
+{% if cover_required %}<p class="editor-hint">Une image de couverture (radio « Couverture » ci-dessus) est obligatoire pour un article.</p>{% endif %}
+{% endmacro %}

@@ -1,16 +1,52 @@
 {% extends "admin/base.html" %}
 {% block title %}CSS{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>CSS du site public</h1>
-  <form method="post">
+<link rel="stylesheet" href="{{ preview_css_url }}">
+<form method="post">
+  <div class="card">
+    <h1>Polices</h1>
+    <p class="muted">Servies depuis Bunny Fonts (miroir de Google Fonts sans tracking) — pas de fichier à héberger.</p>
+
+    <label for="font_title">Police des titres</label>
+    <select id="font_title" name="font_title">
+      {% for f in fonts %}<option value="{{ f }}"{% if f == css.font_title %} selected{% endif %}>{{ f }}</option>{% endfor %}
+    </select>
+    <p id="font_title_preview" style="font-size:1.6rem; font-weight:600; margin:.6rem 0 0;">Titre d'exemple</p>
+
+    <label for="font_body">Police du texte</label>
+    <select id="font_body" name="font_body">
+      {% for f in fonts %}<option value="{{ f }}"{% if f == css.font_body %} selected{% endif %}>{{ f }}</option>{% endfor %}
+    </select>
+    <p id="font_body_preview" style="margin:.6rem 0 0;">Voici un aperçu du texte courant, pour vérifier la lisibilité de cette police avant de l'enregistrer.</p>
+  </div>
+
+  <div class="card">
+    <h1>CSS du site public</h1>
     <label for="contenu">Contenu (CSS brut)</label>
-    <textarea id="contenu" name="contenu" style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; min-height:60vh;">{{ css.contenu }}</textarea>
-    <div class="row" style="margin-top:1.25rem;">
-      <button class="btn btn-primary" type="submit">Enregistrer</button>
-      <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Annuler</a>
-      <a class="btn btn-ghost" href="{{ url_for('preview_home') }}" target="_blank">Aperçu ↗</a>
-    </div>
-  </form>
-</div>
+    <textarea id="contenu" name="contenu" style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; min-height:50vh;">{{ css.contenu }}</textarea>
+  </div>
+
+  <div class="row" style="margin-top:1.25rem;">
+    <button class="btn btn-primary" type="submit">Enregistrer</button>
+    <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Annuler</a>
+    <button class="btn btn-ghost" type="submit" formtarget="_blank" formaction="{{ url_for('css_preview') }}">Prévisualiser le site ↗</button>
+  </div>
+</form>
+
+<script>
+  (function () {
+    var titleSelect = document.getElementById("font_title");
+    var bodySelect = document.getElementById("font_body");
+    var titlePreview = document.getElementById("font_title_preview");
+    var bodyPreview = document.getElementById("font_body_preview");
+
+    function update() {
+      titlePreview.style.fontFamily = '"' + titleSelect.value + '"';
+      bodyPreview.style.fontFamily = '"' + bodySelect.value + '"';
+    }
+    titleSelect.addEventListener("change", update);
+    bodySelect.addEventListener("change", update);
+    update();
+  })();
+</script>
 {% endblock %}

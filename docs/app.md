@@ -36,18 +36,26 @@ ci-dessous.
 
 ## Modèle de données
 
-- **Home** (singleton) : titre, présentation
+- **Home** (singleton) : titre du site (édité depuis `/seo/edit`, voir SEO
+  ci-dessous), titre de la page d'accueil, présentation, image de couverture
+  et galerie (optionnelles), bascule pour afficher/masquer la liste des
+  projets
 - **Tag** : nom, présentation, ordre (nav)
-- **Article** : titre, image, tags, poids (tri décroissant), galerie d'images
-- **Page libre** : titre, image (optionnelle), texte, ordre (nav)
+- **Article** : titre, image de couverture (obligatoire dès le 2ᵉ
+  enregistrement), tags, poids (tri décroissant), texte, galerie d'images
+- **Page libre** : titre, image (optionnelle), texte, ordre (nav), galerie
+  d'images
 
 Navigation générée : Accueil · \<tags\> · \<pages libres\>.
 
 ## SEO
 
-Réglages globaux depuis `/seo/edit` (lien « SEO » dans la topbar) — pas de
+Réglages globaux depuis `/seo/edit` (lien « Site » dans la topbar) — pas de
 champ SEO par article : chaque page réutilise déjà son propre titre, son
 texte (pour la description) et son image pour son partage sur les réseaux.
+C'est aussi là qu'est édité le **titre du site** (`Home.site_titre` — nom
+affiché dans l'onglet du navigateur, l'en-tête et le pied de page de toutes
+les pages), un réglage global plutôt qu'un champ de la page d'accueil.
 
 - **URL publique du site** (`base_url`, ex. `https://mon-site.gitlab.io/portfolio`,
   sans slash final) : nécessaire pour générer `sitemap.xml` et les URLs
@@ -64,7 +72,7 @@ texte (pour la description) et son image pour son partage sur les réseaux.
   Google Search Console** (colle le contenu de la balise fournie par
   Google).
 
-URLs du site publié : `tag/<slug>.html`, `projet/<slug>.html`,
+URLs du site publié : `tag/<slug>.html`, `projets/<slug>.html`,
 `<slug>.html` pour les pages libres, `index.html` pour l'accueil.
 
 ## Configuration (variables d'environnement)

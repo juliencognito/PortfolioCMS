@@ -12,12 +12,25 @@ class Home(db.Model):
     site_titre = db.Column(db.String(200), nullable=False, default="")
     titre = db.Column(db.String(200), nullable=False, default="")
     presentation = db.Column(db.Text, nullable=False, default="")
+    image = db.Column(db.String(255), nullable=True)  # cover image (filename), optional
+    afficher_projets = db.Column(db.Boolean, nullable=False, default=True)  # show the article card grid
+
+    gallery = db.relationship(
+        "GalleryImage",
+        back_populates="home",
+        order_by="GalleryImage.ordre",
+        cascade="all, delete-orphan",
+    )
 
 
 class SiteCss(db.Model):
-    """Public site CSS, editable from the admin. Singleton (id=1)."""
+    """Public site CSS, editable from the admin. Singleton (id=1). Fonts are
+    served via Bunny CDN (see cms/fonts.py) rather than embedded in `contenu`,
+    so the two pickers on /css/edit have something reliable to drive."""
     id = db.Column(db.Integer, primary_key=True)
     contenu = db.Column(db.Text, nullable=False, default="")
+    font_title = db.Column(db.String(80), nullable=False, default="Fraunces")  # headings, weight 600 only
+    font_body = db.Column(db.String(80), nullable=False, default="Newsreader")  # body text, weight 400 + 400 italic
 
 
 class SiteSeo(db.Model):
@@ -79,17 +92,20 @@ class Article(db.Model):
 
 
 class GalleryImage(db.Model):
-    """Belongs to an Article OR a Page (exactly one FK set). en_texte: inserted
-    via [[image:...]] in the text, hidden from the gallery grid."""
+    """Belongs to an Article, a Page, or Home (exactly one FK set). Also
+    doubles as the image pool an editing form picks a cover from and inserts
+    into the text: en_texte=True excludes it from the public gallery grid."""
     id = db.Column(db.Integer, primary_key=True)
     article_id = db.Column(db.Integer, db.ForeignKey("article.id"), nullable=True)
     page_id = db.Column(db.Integer, db.ForeignKey("page.id"), nullable=True)
+    home_id = db.Column(db.Integer, db.ForeignKey("home.id"), nullable=True)
     filename = db.Column(db.String(255), nullable=False)
     ordre = db.Column(db.Integer, nullable=False, default=0)
     en_texte = db.Column(db.Boolean, nullable=False, default=False)
 
     article = db.relationship("Article", back_populates="gallery")
     page = db.relationship("Page", back_populates="gallery")
+    home = db.relationship("Home", back_populates="gallery")
 
 
 class GitConfig(db.Model):

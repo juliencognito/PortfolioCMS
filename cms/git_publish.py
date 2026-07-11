@@ -1,6 +1,7 @@
 """GitLab sync: push after publish, pull to restore. Uses dulwich (pure-Python
 git) so the packaged desktop app needs no system git installed."""
 import io
+import re
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote, urlsplit, urlunsplit
@@ -57,6 +58,30 @@ def _ensure_repo_files(repo_dir):
 def _authenticated_url(remote, token):
     parts = urlsplit(remote)
     return urlunsplit(parts._replace(netloc=f"oauth2:{quote(token, safe='')}@{parts.netloc}"))
+
+
+_GITLAB_REMOTE_RE = re.compile(r"^(?:https?://|git@)gitlab\.com[:/]([^:]+?)(?:\.git)?/?$")
+
+
+def gitlab_pages_url(remote: str) -> str | None:
+    """gitlab.com remote -> Pages URL (https://user.gitlab.io/project, nested
+    groups keep their path). Self-hosted domains can't be guessed: None."""
+    if not remote:
+        return None
+    match = _GITLAB_REMOTE_RE.match(remote.strip())
+    if not match:
+        return None
+    namespace, _, path = match.group(1).partition("/")
+    if not namespace or not path:
+        return None
+    return f"https://{namespace}.gitlab.io/{path}"
+
+
+def effective_base_url(seo, cfg) -> str:
+    """Explicit SiteSeo.base_url wins; else derive from the GitLab remote."""
+    if seo and seo.base_url:
+        return seo.base_url
+    return gitlab_pages_url(cfg.remote if cfg else "") or ""
 
 
 def _push(repo, remote_location, refspec, force=False):
@@ -118,7 +143,7 @@ def git_push(repo_dir, remote, token):
     finally:
         if repo is not None:
             repo.close()
-    return "Contenu envoyé sur GitLab."
+    return "Site publié et sauvegardé sur GitLab (base, images et site inclus)."
 
 
 def git_pull(repo_dir, remote, token):

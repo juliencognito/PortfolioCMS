@@ -1,5 +1,6 @@
 {% extends "admin/base.html" %}
 {% from "admin/_toolbar.html" import toolbar %}
+{% from "admin/_image_pool.html" import image_pool %}
 {% block title %}{{ "Éditer l'article" if article else "Nouvel article" }}{% endblock %}
 {% block content %}
 <div class="card">
@@ -26,31 +27,14 @@
     <input id="poids" name="poids" type="number" value="{{ article.poids if article else 0 }}">
 
     <label for="texte">Texte</label>
-    {{ toolbar('texte', url_for('article_texte_image', aid=article.id) if article else None) }}
+    {{ toolbar('texte') }}
     <textarea id="texte" name="texte">{{ article.texte if article else '' }}</textarea>
-    <p class="editor-hint">Sélectionne du texte puis clique un bouton — ou écris directement **gras**, *italique*, ++souligné++, `code`, ### titre (h3-h5), --- séparateur, 🖼 insère une image (article déjà enregistré uniquement).</p>
+    <p class="editor-hint">Sélectionne du texte puis clique un bouton.</p>
 
-    <label for="image">Image principale</label>
-    {% if article and article.image %}
-      <div class="thumbs"><figure><img src="{{ url_for('uploads', filename=img_variant(article.image, 'small')) }}" alt=""></figure></div>
-      <p class="muted" style="font-size:.85rem;">Charger un fichier remplace l'image actuelle.</p>
-    {% endif %}
-    <input id="image" name="image" type="file" accept="image/*">
-
-    <label for="gallery">Galerie — dossier d'images (sélection multiple)</label>
-    <input id="gallery" name="gallery" type="file" accept="image/*" multiple>
-
-    {% if article and article.gallery|rejectattr('en_texte')|list %}
-      <div class="thumbs">
-        {% for g in article.gallery|rejectattr('en_texte') %}
-          <figure>
-            <img src="{{ url_for('uploads', filename=img_variant(g.filename, 'small')) }}" alt="">
-            <button class="btn btn-danger" style="padding:.15rem .4rem; font-size:.75rem; margin-top:.3rem; width:100%;"
-              type="submit" formaction="{{ url_for('gallery_delete', gid=g.id) }}" formmethod="post" formnovalidate
-              onclick="return confirm('Retirer cette image ?');">Retirer</button>
-          </figure>
-        {% endfor %}
-      </div>
+    {% if article %}
+      {{ image_pool(article.gallery, url_for('article_images_upload', aid=article.id), 'texte', current_cover=article.image, cover_required=True) }}
+    {% else %}
+      <p class="editor-hint">Les images (couverture obligatoire, galerie, insertion dans le texte) se gèrent après un premier enregistrement.</p>
     {% endif %}
 
     <div class="row" style="margin-top:1.5rem;">

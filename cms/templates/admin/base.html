@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Admin{% endblock %} — Portfolio CMS</title>
+  <title>{% block title %}Admin{% endblock %} — PortfolioCMS</title>
   <style>
     :root { --ink:#1a1a1a; --muted:#6b6b6b; --line:#e2e2e2; --bg:#f7f7f8; --accent:#2563eb; --ok:#0a7d3c; --err:#c0392b; }
     * { box-sizing:border-box; }
@@ -11,7 +11,18 @@
     a { color:var(--accent); }
     .topbar { background:#fff; border-bottom:1px solid var(--line); padding:.9rem 1.25rem; display:flex; align-items:center; gap:1.25rem; }
     .topbar .logo { font-weight:700; text-decoration:none; color:var(--ink); }
-    .topbar nav { display:flex; gap:1rem; margin-left:auto; align-items:center; }
+    .topbar nav { display:flex; gap:.9rem; margin-left:auto; align-items:center; }
+    .nav-group { display:flex; align-items:center; gap:.35rem; background:#e7e7ea; border-radius:9px; padding:.35rem; }
+    .nav-label { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:0 .5rem; }
+    .nav-group a {
+      color:var(--ink); text-decoration:none; font-size:.85rem; font-weight:600;
+      padding:.3rem .6rem; border-radius:6px; background:#fff;
+      box-shadow:0 1px 2px rgba(0,0,0,.12);
+    }
+    .nav-group a:hover { color:#fff; background:var(--accent); box-shadow:none; }
+    .nav-actions { display:flex; align-items:center; gap:1rem; padding-left:.75rem; margin-left:.15rem; border-left:1px solid var(--line); }
+    .nav-actions a { color:var(--ink); text-decoration:none; font-weight:600; font-size:.9rem; }
+    .nav-actions a:hover { color:var(--accent); }
     .wrap { max-width:900px; margin:2rem auto; padding:0 1.25rem; }
     .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; }
     h1 { font-size:1.4rem; margin:0 0 1rem; }
@@ -37,6 +48,12 @@
     .thumbs { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:.6rem; }
     .thumbs figure { margin:0; width:110px; }
     .thumbs img { width:110px; height:82px; object-fit:cover; border-radius:6px; border:1px solid var(--line); display:block; }
+    .image-pool { display:flex; flex-wrap:wrap; gap:.7rem; margin-top:.6rem; }
+    .pool-item { margin:0; width:150px; padding:.5rem; border:1px solid var(--line); border-radius:8px; background:#fff; }
+    .pool-item img { width:100%; height:100px; object-fit:cover; border-radius:6px; display:block; margin-bottom:.4rem; }
+    .pool-item label { display:flex; align-items:center; gap:.35rem; font-weight:400; font-size:.85rem; margin:.25rem 0; }
+    .pool-item label input { width:auto; margin:0; }
+    .pool-item .btn { width:100%; margin-top:.3rem; padding:.3rem .4rem; font-size:.8rem; text-align:center; }
     .inline { display:inline; }
     .checklist { display:flex; flex-wrap:wrap; gap:.6rem 1.2rem; }
     .checklist-item { display:flex; align-items:center; gap:.4rem; font-weight:400; font-size:.95rem; margin:0; }
@@ -52,15 +69,27 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="logo" href="{{ url_for('dashboard') }}">Portfolio CMS</a>
+    <a class="logo" href="{{ url_for('dashboard') }}">PortfolioCMS</a>
     <nav>
-      <a href="{{ url_for('preview_home') }}" target="_blank">Aperçu du site ↗</a>
-      <a href="{{ url_for('css_edit') }}">CSS</a>
-      <a href="{{ url_for('seo_edit') }}">SEO</a>
-      <a href="{{ url_for('git_edit') }}">GitLab</a>
-      <form class="inline" method="post" action="{{ url_for('publish') }}">
-        <button class="btn btn-pub" type="submit">Publier</button>
-      </form>
+      <div class="nav-group">
+        <span class="nav-label">Contenu</span>
+        <a href="{{ url_for('dashboard') }}#articles">Articles</a>
+        <a href="{{ url_for('dashboard') }}#pages">Pages</a>
+        <a href="{{ url_for('dashboard') }}#tags">Tags</a>
+        <a href="{{ url_for('home_edit') }}">Accueil</a>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">Paramètres</span>
+        <a href="{{ url_for('css_edit') }}">CSS</a>
+        <a href="{{ url_for('seo_edit') }}">Site</a>
+        <a href="{{ url_for('git_edit') }}">GitLab</a>
+      </div>
+      <div class="nav-actions">
+        <a href="{{ url_for('preview_home') }}" target="_blank">Aperçu du site ↗</a>
+        <form class="inline" method="post" action="{{ url_for('publish') }}">
+          <button class="btn btn-pub" type="submit">Publier</button>
+        </form>
+      </div>
     </nav>
   </header>
   <div class="wrap">
@@ -106,23 +135,45 @@
       insertBlock(id, "#".repeat(level) + " ");
     }
 
-    // toolbar image button: upload, then insert [[image:name]] at the cursor
+    function insertLink(id) {
+      var url = prompt("URL du lien :", "https://");
+      if (!url) return;
+      wrapSelection(id, "[", "](" + url + ")");
+    }
+
+    // image pool: bulk upload, append new thumbnails without a page reload
     (function () {
-      document.querySelectorAll('input[type="file"][data-upload-url]').forEach(function (fileInput) {
-        var textareaId = fileInput.id.replace(/-image-file$/, "");
+      function buildPoolItem(img, pool) {
+        var textareaId = pool.dataset.textarea;
+        var fig = document.createElement("figure");
+        fig.className = "pool-item";
+        fig.innerHTML =
+          '<img src="' + img.thumb_url + '" alt="">' +
+          '<label class="pool-radio"><input type="radio" name="' + pool.dataset.coverField + '" value="' + img.filename + '"> Couverture</label>' +
+          '<label class="pool-check"><input type="checkbox" name="' + pool.dataset.galleryField + '" value="' + img.filename + '" checked> Galerie</label>' +
+          '<button type="button" class="btn btn-ghost">Insérer dans le texte</button>' +
+          '<button class="btn btn-danger" type="submit" formaction="/gallery/' + img.gid + '/delete" formmethod="post" formnovalidate>Retirer</button>';
+        fig.querySelector(".btn-ghost").addEventListener("click", function () {
+          insertBlock(textareaId, "[[image:" + img.filename + "]]");
+        });
+        fig.querySelector(".btn-danger").addEventListener("click", function (e) {
+          if (!confirm("Retirer cette image ?")) e.preventDefault();
+        });
+        return fig;
+      }
+
+      document.querySelectorAll('input[type="file"][data-pool-upload-url]').forEach(function (fileInput) {
         fileInput.addEventListener("change", function () {
-          var file = fileInput.files[0];
-          if (!file) return;
+          var files = fileInput.files;
+          if (!files.length) return;
+          var pool = document.getElementById(fileInput.dataset.poolTarget);
           var data = new FormData();
-          data.append("file", file);
-          fetch(fileInput.dataset.uploadUrl, { method: "POST", body: data })
+          for (var i = 0; i < files.length; i++) data.append("files", files[i]);
+          fetch(fileInput.dataset.poolUploadUrl, { method: "POST", body: data })
             .then(function (r) { return r.json(); })
             .then(function (json) {
-              if (json.filename) {
-                insertBlock(textareaId, "[[image:" + json.filename + "]]");
-              } else {
-                alert(json.error || "Échec de l'upload.");
-              }
+              (json.images || []).forEach(function (img) { pool.appendChild(buildPoolItem(img, pool)); });
+              if (json.error) alert(json.error);
               fileInput.value = "";
             })
             .catch(function () { alert("Échec de l'upload."); });

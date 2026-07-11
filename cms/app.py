@@ -9,7 +9,8 @@ from flask import (
 
 from .build import build
 from .config import BASE_DIR, Config
-from .git_publish import git_pull, git_push
+from .fonts import FONTS, preview_css_url
+from .git_publish import effective_base_url, git_pull, git_push
 from .images import allowed, delete_image, save_image, variant_name
 from .models import Article, GalleryImage, GitConfig, Home, Page, SiteCss, SiteSeo, Tag, db
 from .public_render import Linker, paragraphs, public_context, seo_meta
@@ -40,6 +41,46 @@ def seed_seo() -> SiteSeo:
     return seo
 
 
+def seed_home() -> Home:
+    """Create Home(id=1) if missing."""
+    home = db.session.get(Home, 1)
+    if home is None:
+        home = Home(id=1, site_titre="", titre="", presentation="")
+        db.session.add(home)
+        db.session.commit()
+    return home
+
+
+def _apply_image_pool(obj, form) -> None:
+    """Absent cover_image means "keep current cover"; absent in_gallery
+    checkboxes mean "excluded" (unchecked boxes aren't submitted)."""
+    valid = {g.filename for g in obj.gallery}
+    cover = form.get("cover_image", "")
+    if cover in valid:
+        obj.image = cover
+    in_gallery = set(form.getlist("in_gallery"))
+    for g in obj.gallery:
+        g.en_texte = g.filename not in in_gallery
+
+
+def _images_upload_response(obj, owner_field: str) -> dict:
+    """Save each uploaded file as a new GalleryImage, return thumbnails
+    for image-pool.js to append without reloading the page."""
+    start = len(obj.gallery)
+    saved = []
+    for i, f in enumerate(request.files.getlist("files")):
+        if f and f.filename and allowed(f.filename, Config.ALLOWED_EXTENSIONS):
+            fn = save_image(f, Config.UPLOAD_DIR, Config.IMAGE_SIZES)
+            g = GalleryImage(filename=fn, ordre=start + i, **{owner_field: obj.id})
+            db.session.add(g)
+            saved.append(g)
+    db.session.commit()
+    return {"images": [
+        {"filename": g.filename, "gid": g.id, "thumb_url": url_for("uploads", filename=variant_name(g.filename, "small"))}
+        for g in saved
+    ]}
+
+
 def create_app():
     Config.DB_PATH.parent.mkdir(parents=True, exist_ok=True)  # sqlite needs the dir to exist first
 
@@ -64,19 +105,21 @@ def create_app():
     # ---------------------------------------------------------------- home
     @app.route("/accueil/edit", methods=["GET", "POST"])
     def home_edit():
-        home = db.session.get(Home, 1)
-        if home is None:
-            home = Home(id=1, site_titre="", titre="", presentation="")
-            db.session.add(home)
-            db.session.commit()
+        home = seed_home()
         if request.method == "POST":
-            home.site_titre = request.form.get("site_titre", "").strip()
             home.titre = request.form.get("titre", "").strip()
             home.presentation = request.form.get("presentation", "")
+            home.afficher_projets = bool(request.form.get("afficher_projets"))
+            _apply_image_pool(home, request.form)
             db.session.commit()
             flash("Accueil enregistré.", "ok")
             return redirect(url_for("dashboard"))
         return render_template("admin/home_form.html", home=home)
+
+    @app.route("/accueil/images", methods=["POST"])
+    def home_images_upload():
+        home = db.session.get(Home, 1)
+        return _images_upload_response(home, "home_id")
 
     # ----------------------------------------------------------------- css
     @app.route("/css/edit", methods=["GET", "POST"])
@@ -84,16 +127,44 @@ def create_app():
         css = seed_css()
         if request.method == "POST":
             css.contenu = request.form.get("contenu", "")
+            font_title = request.form.get("font_title", "")
+            font_body = request.form.get("font_body", "")
+            if font_title in FONTS:
+                css.font_title = font_title
+            if font_body in FONTS:
+                css.font_body = font_body
             db.session.commit()
             flash("CSS enregistré.", "ok")
             return redirect(url_for("dashboard"))
-        return render_template("admin/css_form.html", css=css)
+        return render_template("admin/css_form.html", css=css, fonts=sorted(FONTS), preview_css_url=preview_css_url())
+
+    @app.route("/css/preview", methods=["POST"])
+    def css_preview():
+        """Preview font choices (and the free CSS text) as-is, without saving."""
+        css = seed_css()
+        css.contenu = request.form.get("contenu", "")
+        font_title = request.form.get("font_title", "")
+        font_body = request.form.get("font_body", "")
+        if font_title in FONTS:
+            css.font_title = font_title
+        if font_body in FONTS:
+            css.font_body = font_body
+
+        articles = Article.query.order_by(Article.poids.desc(), Article.titre).all()
+        ctx = _preview_ctx(css=css, articles=articles)
+        ctx.update(_preview_seo(ctx["link"], ctx["seo"], title=ctx["home"].titre or ctx["home"].site_titre,
+                                 description_source=ctx["home"].presentation))
+        html = render_template("public/home.html", **ctx)
+        db.session.rollback()  # never persist this preview
+        return html
 
     # ------------------------------------------------------------------ seo
     @app.route("/seo/edit", methods=["GET", "POST"])
     def seo_edit():
         seo = seed_seo()
+        home = seed_home()
         if request.method == "POST":
+            home.site_titre = request.form.get("site_titre", "").strip()
             seo.base_url = request.form.get("base_url", "").strip().rstrip("/")
             seo.meta_description = request.form.get("meta_description", "").strip()
             seo.twitter_handle = request.form.get("twitter_handle", "").strip()
@@ -114,9 +185,9 @@ def create_app():
                 seo.og_image = save_image(file, Config.UPLOAD_DIR, Config.IMAGE_SIZES)
 
             db.session.commit()
-            flash("Réglages SEO enregistrés.", "ok")
+            flash("Réglages du site enregistrés.", "ok")
             return redirect(url_for("dashboard"))
-        return render_template("admin/seo_form.html", seo=seo)
+        return render_template("admin/seo_form.html", seo=seo, home=home)
 
     # ------------------------------------------------------------------ git
     @app.route("/git/edit", methods=["GET", "POST"])
@@ -158,6 +229,7 @@ def create_app():
     @app.route("/articles/<int:aid>/edit", methods=["GET", "POST"])
     def article_edit(aid=None):
         article = Article.query.get_or_404(aid) if aid else None
+        is_new = article is None
         if request.method == "POST":
             titre = request.form.get("titre", "").strip()
             if not titre:
@@ -174,24 +246,11 @@ def create_app():
             tag_ids = [int(t) for t in request.form.getlist("tags")]
             article.tags = Tag.query.filter(Tag.id.in_(tag_ids)).all() if tag_ids else []
 
-            # main image (optional replace)
-            file = request.files.get("image")
-            if file and file.filename:
-                if not allowed(file.filename, Config.ALLOWED_EXTENSIONS):
-                    flash("Format d'image non autorisé.", "error")
-                    return redirect(request.url)
-                if article.image:
-                    delete_image(article.image, Config.UPLOAD_DIR)
-                article.image = save_image(file, Config.UPLOAD_DIR, Config.IMAGE_SIZES)
-
-            db.session.flush()  # ensures article.id for the gallery
-
-            # gallery: multi-file upload
-            for f in request.files.getlist("gallery"):
-                if f and f.filename and allowed(f.filename, Config.ALLOWED_EXTENSIONS):
-                    fn = save_image(f, Config.UPLOAD_DIR, Config.IMAGE_SIZES)
-                    n = len(article.gallery)
-                    db.session.add(GalleryImage(article_id=article.id, filename=fn, ordre=n))
+            _apply_image_pool(article, request.form)
+            # required from the 2nd save on: a brand new article has no id yet to upload into
+            if not is_new and not article.image:
+                flash("Une image de couverture est obligatoire pour un article.", "error")
+                return redirect(request.url)
 
             db.session.commit()
             flash("Article enregistré.", "ok")
@@ -218,25 +277,23 @@ def create_app():
     @app.route("/gallery/<int:gid>/delete", methods=["POST"])
     def gallery_delete(gid):
         g = GalleryImage.query.get_or_404(gid)
-        aid, pid = g.article_id, g.page_id
+        aid, pid, hid = g.article_id, g.page_id, g.home_id
+        owner = g.article or g.page or g.home
+        if owner and owner.image == g.filename:
+            owner.image = None  # this image was the cover: don't leave a dangling reference
         delete_image(g.filename, Config.UPLOAD_DIR)
         db.session.delete(g)
         db.session.commit()
+        if hid:
+            return redirect(url_for("home_edit"))
         if pid:
             return redirect(url_for("page_edit", pid=pid))
         return redirect(url_for("article_edit", aid=aid))
 
-    @app.route("/articles/<int:aid>/texte-image", methods=["POST"])
-    def article_texte_image(aid):
-        """Insert-image upload from the text toolbar: not added to the gallery grid."""
+    @app.route("/articles/<int:aid>/images", methods=["POST"])
+    def article_images_upload(aid):
         article = Article.query.get_or_404(aid)
-        file = request.files.get("file")
-        if not file or not file.filename or not allowed(file.filename, Config.ALLOWED_EXTENSIONS):
-            return {"error": "Format d'image non autorisé."}, 400
-        fn = save_image(file, Config.UPLOAD_DIR, Config.IMAGE_SIZES)
-        db.session.add(GalleryImage(article_id=article.id, filename=fn, ordre=len(article.gallery), en_texte=True))
-        db.session.commit()
-        return {"filename": fn}
+        return _images_upload_response(article, "article_id")
 
     @app.route("/articles/preview", methods=["POST"])
     @app.route("/articles/<int:aid>/preview", methods=["POST"])
@@ -248,6 +305,7 @@ def create_app():
         article.poids = int(request.form.get("poids") or 0)
         tag_ids = [int(t) for t in request.form.getlist("tags")]
         article.tags = Tag.query.filter(Tag.id.in_(tag_ids)).all() if tag_ids else []
+        _apply_image_pool(article, request.form)
         ctx = _preview_ctx(article=article)
         ctx.update(_preview_seo(ctx["link"], ctx["seo"], title=article.titre,
                                  description_source=article.texte, image=article.image))
@@ -328,28 +386,17 @@ def create_app():
                 page.slug = unique_slug(titre, _slug_exists_page(page.id))
             page.texte = request.form.get("texte", "")
             page.ordre = int(request.form.get("ordre") or 0)
-            file = request.files.get("image")
-            if file and file.filename:
-                if not allowed(file.filename, Config.ALLOWED_EXTENSIONS):
-                    flash("Format d'image non autorisé.", "error")
-                    return redirect(request.url)
-                if page.image:
-                    delete_image(page.image, Config.UPLOAD_DIR)
-                page.image = save_image(file, Config.UPLOAD_DIR, Config.IMAGE_SIZES)
-
-            db.session.flush()  # ensures page.id for the gallery
-
-            # gallery: multi-file upload
-            for f in request.files.getlist("gallery"):
-                if f and f.filename and allowed(f.filename, Config.ALLOWED_EXTENSIONS):
-                    fn = save_image(f, Config.UPLOAD_DIR, Config.IMAGE_SIZES)
-                    n = len(page.gallery)
-                    db.session.add(GalleryImage(page_id=page.id, filename=fn, ordre=n))
+            _apply_image_pool(page, request.form)
 
             db.session.commit()
             flash("Page enregistrée.", "ok")
             return redirect(url_for("page_edit", pid=page.id))
         return render_template("admin/page_form.html", page=page)
+
+    @app.route("/pages/<int:pid>/images", methods=["POST"])
+    def page_images_upload(pid):
+        page = Page.query.get_or_404(pid)
+        return _images_upload_response(page, "page_id")
 
     @app.route("/pages/preview", methods=["POST"])
     @app.route("/pages/<int:pid>/preview", methods=["POST"])
@@ -358,6 +405,7 @@ def create_app():
         page = Page.query.get_or_404(pid) if pid else Page()
         page.titre = request.form.get("titre", "").strip() or "(sans titre)"
         page.texte = request.form.get("texte", "")
+        _apply_image_pool(page, request.form)
         ctx = _preview_ctx(page=page)
         ctx.update(_preview_seo(ctx["link"], ctx["seo"], title=page.titre,
                                  description_source=page.texte, image=page.image))
@@ -377,18 +425,6 @@ def create_app():
         flash("Page supprimée.", "ok")
         return redirect(url_for("dashboard"))
 
-    @app.route("/pages/<int:pid>/texte-image", methods=["POST"])
-    def page_texte_image(pid):
-        """Insert-image upload from the text toolbar: not added to the gallery grid."""
-        page = Page.query.get_or_404(pid)
-        file = request.files.get("file")
-        if not file or not file.filename or not allowed(file.filename, Config.ALLOWED_EXTENSIONS):
-            return {"error": "Format d'image non autorisé."}, 400
-        fn = save_image(file, Config.UPLOAD_DIR, Config.IMAGE_SIZES)
-        db.session.add(GalleryImage(page_id=page.id, filename=fn, ordre=len(page.gallery), en_texte=True))
-        db.session.commit()
-        return {"filename": fn}
-
     # ------------------------------------------------------------ publish
     @app.route("/publish", methods=["POST"])
     def publish():
@@ -400,6 +436,9 @@ def create_app():
         except RuntimeError as exc:
             flash(f"{message} Échec de l'envoi vers GitLab : {exc}", "error")
         else:
+            pages_url = effective_base_url(db.session.get(SiteSeo, 1), cfg) if result else None
+            if pages_url:
+                result = f"{result} En ligne : {pages_url}"
             flash(f"{message} {result}" if result else message, "ok")
         return redirect(url_for("dashboard"))
 
@@ -409,7 +448,7 @@ def create_app():
         return send_from_directory(Config.UPLOAD_DIR, filename)
 
     # ------------------------------------------------------------ preview
-    def _preview_ctx(**extra):
+    def _preview_ctx(css=None, **extra):
         home = db.session.get(Home, 1) or Home(titre="", presentation="")
         ctx = public_context(
             Linker("preview"),
@@ -417,6 +456,7 @@ def create_app():
             Tag.query.order_by(Tag.ordre, Tag.nom).all(),
             Page.query.order_by(Page.ordre, Page.id).all(),
             db.session.get(SiteSeo, 1),
+            css if css is not None else db.session.get(SiteCss, 1),
         )
         ctx.update(extra)
         return ctx
@@ -446,7 +486,7 @@ def create_app():
         ctx.update(_preview_seo(ctx["link"], ctx["seo"], title=tag.nom, description_source=tag.presentation))
         return render_template("public/tag.html", **ctx)
 
-    @app.route("/preview/projet/<slug>")
+    @app.route("/preview/projets/<slug>")
     def preview_article(slug):
         article = Article.query.filter_by(slug=slug).first_or_404()
         ctx = _preview_ctx(article=article)
@@ -486,7 +526,8 @@ def create_app():
             click.echo(f"Échec de l'envoi vers GitLab : {exc}")
         else:
             if result:
-                click.echo(result)
+                pages_url = effective_base_url(db.session.get(SiteSeo, 1), cfg)
+                click.echo(f"{result} En ligne : {pages_url}" if pages_url else result)
 
     return app
 

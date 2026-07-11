@@ -18,6 +18,7 @@
 #          `python3 -m venv --system-site-packages .venv` so PyInstaller can
 #          bundle the gi/PyGObject bindings).
 import os
+import sys
 
 ROOT = os.path.dirname(SPECPATH)  # repo root (SPECPATH = builder/)
 
@@ -49,22 +50,44 @@ a = Analysis(
     cipher=block_cipher,
 )
 
-# PyInstaller's GdkPixbuf hook unconditionally bundles ALL image-decoding
-# plugins (AVIF/HEIF/JPEG-XL included, ~25 MB of codecs), even though GTK is
-# only used here for the window itself: web content is rendered by WebKit
-# (loaded from the system, never bundled), not GdkPixbuf. No hooksconfig
-# option for this, so filter manually.
-a.binaries = [b for b in a.binaries if "gdk-pixbuf" not in b[0]]
-a.datas = [d for d in a.datas if "gdk-pixbuf" not in d[0]]
+# The gi hook doesn't just bundle GTK: it drags in the CI runner's entire
+# native dependency closure (GLib/GObject/GTK/WebKit, but also transitive
+# base-OS libs like libmount/libblkid/libselinux/libpcre2...). Bundling any
+# of it is actively harmful, not just wasted space: at runtime the bundled
+# (CI runner's) copy loads first, then some other system library dlopen'd
+# later by GObject introspection — compiled against the *target machine's
+# own* version of that same dependency — fails to resolve a symbol against
+# the stale one already resident in memory. Piège vécu, in two steps: first
+# libglib itself (`undefined symbol: g_variant_builder_init_static`, fixed by
+# excluding the GTK stack by name), then libmount transitively pulled in by
+# libgio (`version 'MOUNT_2_40' not found`) — a whack-a-mole that never ends
+# by naming libraries one at a time. GTK3 + WebKit2 + PyGObject are already a
+# required system dependency on the target machine (see docs/desktop.md), so
+# instead drop every shared library PyInstaller sourced from a system
+# directory, keeping only what's genuinely vendored by a wheel in this venv
+# (e.g. Pillow's own libjpeg/libwebp, which must stay bundled since the
+# target system doesn't provide them) plus the interpreter itself. Python
+# extension modules (gi's own _gi.so included) are a different TOC type and
+# always kept regardless of where they live.
+_VENV_PREFIX = os.path.normpath(sys.prefix)
 
-# Once the plugins above are removed, these codec libraries (AVIF/HEIF/SVG/
-# JPEG-XL and their AV1 dependencies) become orphaned — nothing left in the
-# package references them (verified via `readelf -d`).
-_ORPHANED_CODECS = (
-    "libavif", "libheif", "librsvg", "libjxl",
-    "libaom", "libsvtav1enc", "librav1e", "libdav1d", "libgav1", "libyuv",
-)
-a.binaries = [b for b in a.binaries if not b[0].lower().startswith(_ORPHANED_CODECS)]
+
+def _keep_binary(entry):
+    dest, source, typecode = entry
+    if typecode != "BINARY":
+        return True  # EXTENSION (Python modules, e.g. gi/_gi.so): always needed
+    if os.path.basename(dest).lower().startswith("libpython"):
+        return True  # the interpreter itself
+    return os.path.normpath(source).startswith(_VENV_PREFIX)  # wheel-vendored, not system-provided
+
+
+a.binaries = [b for b in a.binaries if _keep_binary(b)]
+
+# GdkPixbuf's icon themes/translations/image-format loaders are `datas`, a
+# separate TOC untouched by the binaries filter above — GTK is only used
+# here for the window chrome, web content is rendered by WebKit, not
+# GdkPixbuf, so none of this is needed either (~330 MB before this filter).
+a.datas = [d for d in a.datas if "gdk-pixbuf" not in d[0]]
 
 # The gi hook also bundles the CI runner's own GLib/GObject/GTK/WebKit stack.
 # That's actively harmful, not just wasted space: at runtime the bundled

@@ -66,6 +66,25 @@ _ORPHANED_CODECS = (
 )
 a.binaries = [b for b in a.binaries if not b[0].lower().startswith(_ORPHANED_CODECS)]
 
+# The gi hook also bundles the CI runner's own GLib/GObject/GTK/WebKit stack.
+# That's actively harmful, not just wasted space: at runtime the bundled
+# (older) libglib-2.0 gets loaded into the process first, then a system
+# library dlopen'd later by GObject introspection (libwebkit2gtk, libsecret,
+# ...) — compiled against the *target machine's own* (newer) glib — fails to
+# resolve a symbol against the bundled one still resident in memory
+# (observed: "undefined symbol: g_variant_builder_init_static" on a Debian
+# 13 host, package built on an older CI runner). GTK3 + WebKit2GTK are
+# already a required system dependency on the target machine (see
+# docs/desktop.md), so drop the bundled copies entirely and let the dynamic
+# linker fall through to the system's own, version-matched libraries.
+_SYSTEM_GTK_STACK = (
+    "libglib-2.0", "libgobject-2.0", "libgio-2.0", "libgmodule-2.0",
+    "libgthread-2.0", "libgtk-3", "libgdk-3", "libgdk_pixbuf-2.0",
+    "libpango", "libcairo", "libatk", "libharfbuzz",
+    "libwebkit2gtk", "libjavascriptcoregtk", "libsecret",
+)
+a.binaries = [b for b in a.binaries if not os.path.basename(b[0]).lower().startswith(_SYSTEM_GTK_STACK)]
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(

@@ -1,0 +1,16 @@
+{% macro card_grid(articles, link) %}
+<ul class="card-grid">
+  {% for a in articles %}
+  <li class="card">
+    <a href="{{ link.article(a) }}">
+      {% if a.image %}
+        <div class="card-media">
+          <img src="{{ link.media(a.image, size='medium') }}" alt="{{ a.titre }}" loading="lazy">
+        </div>
+      {% endif %}
+      <span class="card-title">{{ a.titre }}</span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}

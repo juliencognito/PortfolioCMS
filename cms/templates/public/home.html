@@ -1,0 +1,10 @@
+{% extends "public/base.html" %}
+{% from "public/_cards.html" import card_grid %}
+{% block content %}
+  <section class="intro">
+    <h1>{{ home.titre }}</h1>
+    {% if home.presentation %}<div class="prose">{{ home.presentation | paragraphs(link) }}</div>{% endif %}
+  </section>
+
+  {{ card_grid(articles, link) }}
+{% endblock %}

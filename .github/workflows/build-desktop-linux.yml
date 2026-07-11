@@ -1,0 +1,67 @@
+name: Build desktop package (Linux)
+
+# Déclenchement manuel uniquement (onglet Actions -> Run workflow). Un
+# workflow par plateforme pour pouvoir lancer juste celle dont on a besoin —
+# voir CLAUDE.md "Application desktop" / "Décisions & pièges" pour le contexte.
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag de release GitHub (laisser vide pour ne pas publier, ex: v1.0.0)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write # nécessaire uniquement si release_tag est renseigné
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # PyGObject (bindings GTK) n'est pas installable proprement via pip ici :
+      # on installe les paquets système (apt) puis on crée le venv avec
+      # --system-site-packages à partir du python3 SYSTÈME du runner (pas
+      # actions/setup-python, qui donnerait un interpréteur isolé sans les
+      # bindings gi). Voir desktop.spec pour le même besoin en local.
+      - name: Install system deps (GTK3/WebKit2/PyGObject)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi python3-gi-cairo gir1.2-gtk-3.0 \
+            gir1.2-webkit2-4.1 python3-venv
+
+      - name: Create venv and install deps
+        run: |
+          python3 -m venv --system-site-packages .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          source .venv/bin/activate
+          pyinstaller builder/desktop.spec
+
+      # path: dist (pas dist/PortfolioCMS) pour que le zip téléchargé
+      # contienne bien un dossier PortfolioCMS/ à la racine, cohérent avec le
+      # README. Pas de zip manuel ici : actions/upload-artifact zippe déjà le
+      # téléchargement lui-même -- zipper en plus créerait un zip dans le zip.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: portfolio-cms-linux-x64
+          path: dist
+
+      # Zip dédié à la release (un asset de Release doit être un fichier
+      # unique, pas un dossier -- contrairement à actions/upload-artifact qui
+      # zippe lui-même à la volée).
+      - name: Zip for release
+        if: inputs.release_tag != ''
+        run: cd dist && zip -r ../portfolio-cms-linux-x64.zip PortfolioCMS
+
+      - name: Publish to release
+        if: inputs.release_tag != ''
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: portfolio-cms-linux-x64.zip

@@ -1,0 +1,5 @@
+Flask>=3.0
+Flask-SQLAlchemy>=3.1
+Pillow>=10.0
+dulwich>=0.22
+pywebview>=6.0

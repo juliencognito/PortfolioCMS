@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% from "admin/_toolbar.html" import toolbar %}
+{% block title %}{{ "Éditer le tag" if tag else "Nouveau tag" }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>{{ "Éditer le tag" if tag else "Nouveau tag" }}</h1>
+  <form method="post">
+    <label for="nom">Nom</label>
+    <input id="nom" name="nom" type="text" value="{{ tag.nom if tag else '' }}" required>
+    <label for="presentation">Présentation (peut être vide)</label>
+    {{ toolbar('presentation') }}
+    <textarea id="presentation" name="presentation">{{ tag.presentation if tag else '' }}</textarea>
+    <p class="editor-hint">Sélectionne du texte puis clique un bouton — ou écris directement **gras**, *italique*, ++souligné++, `code`, ### titre (h3-h5), --- séparateur.</p>
+    <label for="ordre">Ordre dans la navigation</label>
+    <input id="ordre" name="ordre" type="number" value="{{ tag.ordre if tag else 0 }}">
+    <div class="row" style="margin-top:1.25rem;">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <button class="btn btn-ghost" type="submit" formtarget="_blank"
+        formaction="{{ url_for('tag_preview', tid=tag.id) if tag else url_for('tag_preview') }}">
+        Prévisualiser
+      </button>
+      <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block title %}SEO{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Référencement (SEO)</h1>
+  <p class="muted">Réglages globaux uniquement : chaque page utilise déjà son propre titre/texte/image pour sa description et son image de partage — pas de champ SEO par article.</p>
+  <form method="post" enctype="multipart/form-data">
+
+    <label for="base_url">URL publique du site</label>
+    <input id="base_url" name="base_url" type="text" placeholder="https://mon-site.gitlab.io/portfolio" value="{{ seo.base_url }}">
+    <p class="editor-hint">Sans slash final. Nécessaire pour générer <code>sitemap.xml</code> et les URLs canoniques/Open Graph — sans elle, ni l'un ni l'autre ne sont produits au build.</p>
+
+    <label for="meta_description">Description par défaut</label>
+    <textarea id="meta_description" name="meta_description" style="min-height:5rem;">{{ seo.meta_description }}</textarea>
+    <p class="editor-hint">Utilisée seulement si une page n'a pas de texte à en tirer (ex. accueil sans présentation).</p>
+
+    <label for="og_image">Image de partage par défaut</label>
+    {% if seo.og_image %}
+      <div class="thumbs"><figure><img src="{{ url_for('uploads', filename=img_variant(seo.og_image, 'small')) }}" alt=""></figure></div>
+      <label class="checklist-item"><input type="checkbox" name="remove_og_image" value="1"> Retirer cette image</label>
+    {% endif %}
+    <input id="og_image" name="og_image" type="file" accept="image/*">
+    <p class="editor-hint">Utilisée seulement pour les pages sans image propre (accueil, tags). Charger un fichier remplace l'image actuelle.</p>
+
+    <label for="twitter_handle">Compte Twitter/X (optionnel)</label>
+    <input id="twitter_handle" name="twitter_handle" type="text" placeholder="@monsite" value="{{ seo.twitter_handle }}">
+
+    <label for="robots">Directive robots</label>
+    <select id="robots" name="robots">
+      <option value="index, follow" {{ 'selected' if seo.robots == 'index, follow' }}>index, follow — site indexable (normal)</option>
+      <option value="noindex, nofollow" {{ 'selected' if seo.robots == 'noindex, nofollow' }}>noindex, nofollow — site masqué des moteurs (chantier)</option>
+    </select>
+
+    <label for="search_console_verification">Vérification Google Search Console (optionnel)</label>
+    <input id="search_console_verification" name="search_console_verification" type="text" placeholder="contenu de la balise meta fournie par Google" value="{{ seo.search_console_verification }}">
+
+    <div class="row" style="margin-top:1.25rem;">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

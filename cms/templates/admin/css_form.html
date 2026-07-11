@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{% block title %}CSS{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>CSS du site public</h1>
+  <form method="post">
+    <label for="contenu">Contenu (CSS brut)</label>
+    <textarea id="contenu" name="contenu" style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; min-height:60vh;">{{ css.contenu }}</textarea>
+    <div class="row" style="margin-top:1.25rem;">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Annuler</a>
+      <a class="btn btn-ghost" href="{{ url_for('preview_home') }}" target="_blank">Aperçu ↗</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

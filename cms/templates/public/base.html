@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ home.site_titre }}{% endblock %}</title>
+  {% if meta_description %}<meta name="description" content="{{ meta_description }}">{% endif %}
+  <meta name="robots" content="{{ robots or 'index, follow' }}">
+  {% if canonical %}<link rel="canonical" href="{{ canonical }}">{% endif %}
+  {% if seo and seo.search_console_verification %}
+    <meta name="google-site-verification" content="{{ seo.search_console_verification }}">
+  {% endif %}
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ home.site_titre }}">
+  {% if meta_title %}<meta property="og:title" content="{{ meta_title }}">{% endif %}
+  {% if meta_description %}<meta property="og:description" content="{{ meta_description }}">{% endif %}
+  {% if canonical %}<meta property="og:url" content="{{ canonical }}">{% endif %}
+  {% if meta_image_url %}<meta property="og:image" content="{{ meta_image_url }}">{% endif %}
+  <meta name="twitter:card" content="{{ 'summary_large_image' if meta_image_url else 'summary' }}">
+  {% if seo and seo.twitter_handle %}<meta name="twitter:site" content="{{ seo.twitter_handle }}">{% endif %}
+
+  <link rel="stylesheet" href="{{ link.css() }}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{{ link.home() }}">{{ home.site_titre or "Portfolio" }}</a>
+    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <span class="nav-toggle-icon" aria-hidden="true"></span>
+    </button>
+    <nav class="site-nav" id="site-nav">
+      {% for t in nav_tags %}
+        <a href="{{ link.tag(t) }}"{% if tag is defined and tag and t.id == tag.id %} class="active"{% endif %}>{{ t.nom }}</a>
+      {% endfor %}
+      {% for p in nav_pages %}
+        <a href="{{ link.page(p) }}"{% if page is defined and page and p.id == page.id %} class="active"{% endif %}>{{ p.titre }}</a>
+      {% endfor %}
+    </nav>
+  </header>
+
+  <main class="site-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; {{ home.site_titre }}</p>
+  </footer>
+
+  <script>
+    (function () {
+      var toggle = document.querySelector(".nav-toggle");
+      var nav = document.getElementById("site-nav");
+      if (!toggle || !nav) return;
+      toggle.addEventListener("click", function () {
+        var open = nav.classList.toggle("is-open");
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    })();
+  </script>
+</body>
+</html>

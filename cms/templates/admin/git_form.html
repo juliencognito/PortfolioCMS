@@ -1,0 +1,28 @@
+{% extends "admin/base.html" %}
+{% block title %}GitLab{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Publication sur GitLab</h1>
+  <p class="muted">Laisser ces champs vides désactive l'envoi automatique : « Publier » ne fera alors que régénérer le site en local, comme avant.</p>
+  <form method="post">
+    <label for="remote">URL du dépôt</label>
+    <input id="remote" name="remote" type="text" placeholder="https://gitlab.com/&lt;utilisateur&gt;/&lt;projet&gt;.git" value="{{ cfg.remote }}">
+
+    <label for="token">Token d'accès (scope <code>write_repository</code>)</label>
+    <input id="token" name="token" type="text" autocomplete="off" value="{{ cfg.token }}">
+
+    <div class="row" style="margin-top:1.25rem;">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Annuler</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h1>Récupérer depuis GitLab</h1>
+  <p class="muted">Réinitialise base, images et site publié sur ce qui est actuellement sur GitLab — utile pour annuler des essais locaux non publiés. Nécessite l'URL et le token ci-dessus.</p>
+  <form method="post" action="{{ url_for('git_pull_route') }}" onsubmit="return confirm('Les données locales non publiées (base, images, site) seront perdues. Continuer ?');">
+    <button class="btn btn-danger" type="submit">Récupérer depuis GitLab (écrase les modifications locales)</button>
+  </form>
+</div>
+{% endblock %}

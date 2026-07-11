@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% from "admin/_toolbar.html" import toolbar %}
+{% block title %}Accueil{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Page d'accueil</h1>
+  <form method="post">
+    <label for="site_titre">Titre du site</label>
+    <input id="site_titre" name="site_titre" type="text" value="{{ home.site_titre }}">
+    <p class="editor-hint">Affiché dans l'onglet du navigateur, l'en-tête et le pied de page de toutes les pages.</p>
+    <label for="titre">Titre de la page d'accueil</label>
+    <input id="titre" name="titre" type="text" value="{{ home.titre }}">
+    <p class="editor-hint">Affiché uniquement en haut de la page d'accueil.</p>
+    <label for="presentation">Présentation (peut être vide)</label>
+    {{ toolbar('presentation') }}
+    <textarea id="presentation" name="presentation">{{ home.presentation }}</textarea>
+    <p class="editor-hint">Sélectionne du texte puis clique un bouton — ou écris directement **gras**, *italique*, ++souligné++, `code`, ### titre (h3-h5), --- séparateur.</p>
+    <div class="row" style="margin-top:1.25rem;">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Annuler</a>
+      <a class="btn btn-ghost" href="{{ url_for('preview_home') }}" target="_blank">Aperçu ↗</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

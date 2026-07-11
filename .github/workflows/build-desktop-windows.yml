@@ -1,0 +1,71 @@
+name: Build desktop package (Windows)
+
+# Déclenchement manuel uniquement (onglet Actions -> Run workflow). Un
+# workflow par plateforme pour pouvoir lancer juste celle dont on a besoin —
+# voir CLAUDE.md "Application desktop" / "Décisions & pièges" pour le contexte.
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag de release GitHub (laisser vide pour ne pas publier, ex: v1.0.0)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write # nécessaire uniquement si release_tag est renseigné
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # pywebview déclare pythonnet avec un environment marker
+      # (sys_platform == "win32") dans ses propres dépendances : un simple
+      # pip install le récupère automatiquement, rien à installer à part.
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Create venv and install deps
+        shell: bash
+        run: |
+          python -m venv .venv
+          source .venv/Scripts/activate
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        shell: bash
+        run: |
+          source .venv/Scripts/activate
+          pyinstaller builder/desktop.spec
+
+      # path: dist (pas dist/PortfolioCMS) pour que le zip téléchargé
+      # contienne bien un dossier PortfolioCMS/ à la racine, cohérent avec le
+      # README. Pas de zip manuel ici : actions/upload-artifact zippe déjà le
+      # téléchargement lui-même -- zipper en plus créerait un zip dans le zip.
+      #
+      # ⚠️ Windows marque tout fichier téléchargé (Mark of the Web) : après
+      # extraction, le loader .NET de pythonnet refuse d'initialiser
+      # Python.Runtime.dll tant que le zip n'est pas débloqué (clic droit sur
+      # le zip -> Propriétés -> Débloquer, avant extraction). Voir README.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: portfolio-cms-windows-x64
+          path: dist
+
+      # Zip dédié à la release (un asset de Release doit être un fichier
+      # unique, pas un dossier -- contrairement à actions/upload-artifact qui
+      # zippe lui-même à la volée).
+      - name: Zip for release
+        if: inputs.release_tag != ''
+        shell: pwsh
+        run: Compress-Archive -Path dist/PortfolioCMS -DestinationPath portfolio-cms-windows-x64.zip
+
+      - name: Publish to release
+        if: inputs.release_tag != ''
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: portfolio-cms-windows-x64.zip

@@ -1,0 +1,63 @@
+name: Build desktop package (macOS Intel)
+
+# Déclenchement manuel uniquement (onglet Actions -> Run workflow). Un
+# workflow par plateforme pour pouvoir lancer juste celle dont on a besoin —
+# voir CLAUDE.md "Application desktop" / "Décisions & pièges" pour le contexte.
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag de release GitHub (laisser vide pour ne pas publier, ex: v1.0.0)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write # nécessaire uniquement si release_tag est renseigné
+
+jobs:
+  build:
+    runs-on: macos-15-intel # runner Intel (x86_64) -- macos-13 retiré par GitHub, macos-14+/macos-15 nus sont Apple Silicon
+    steps:
+      - uses: actions/checkout@v7
+
+      # pywebview déclare les frameworks pyobjc avec un environment marker
+      # (sys_platform == "darwin") dans ses propres dépendances : un simple
+      # pip install les récupère automatiquement, rien à installer à part.
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Create venv and install deps
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          source .venv/bin/activate
+          pyinstaller builder/desktop.spec
+
+      # path: dist (pas dist/PortfolioCMS) pour que le zip téléchargé
+      # contienne bien un dossier PortfolioCMS/ à la racine, cohérent avec le
+      # README. Pas de zip manuel ici : actions/upload-artifact zippe déjà le
+      # téléchargement lui-même -- zipper en plus créerait un zip dans le zip.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: portfolio-cms-macos-x64
+          path: dist
+
+      # Zip dédié à la release (un asset de Release doit être un fichier
+      # unique, pas un dossier -- contrairement à actions/upload-artifact qui
+      # zippe lui-même à la volée).
+      - name: Zip for release
+        if: inputs.release_tag != ''
+        run: cd dist && zip -r ../portfolio-cms-macos-x64.zip PortfolioCMS
+
+      - name: Publish to release
+        if: inputs.release_tag != ''
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: portfolio-cms-macos-x64.zip

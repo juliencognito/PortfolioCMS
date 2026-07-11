@@ -1,0 +1,103 @@
+{% extends "admin/base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="row" style="justify-content:space-between;">
+    <h1 style="margin:0;">Tableau de bord</h1>
+  </div>
+  <p class="muted">Site généré dans <code>{{ output_dir }}</code>. Clique sur « Publier » (en haut) pour (re)générer le site statique.</p>
+</div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between;">
+    <h2>Accueil</h2>
+    <a class="btn btn-ghost" href="{{ url_for('home_edit') }}">Modifier l'accueil</a>
+  </div>
+  <p class="muted">{{ home.titre if home else "—" }}</p>
+</div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between;">
+    <h2>Articles / projets</h2>
+    <a class="btn btn-primary" href="{{ url_for('article_edit') }}">+ Nouvel article</a>
+  </div>
+  <table>
+    <thead><tr><th>Poids</th><th>Titre</th><th>Tag</th><th></th></tr></thead>
+    <tbody>
+      {% for a in articles %}
+      <tr>
+        <td>{{ a.poids }}</td>
+        <td>{{ a.titre }}</td>
+        <td class="muted">{{ a.tags|map(attribute='nom')|join(', ') or "—" }}</td>
+        <td class="row">
+          <a href="{{ url_for('preview_article', slug=a.slug) }}" target="_blank">Aperçu</a>
+          <a href="{{ url_for('article_edit', aid=a.id) }}">Éditer</a>
+          <form class="inline" method="post" action="{{ url_for('article_delete', aid=a.id) }}" onsubmit="return confirm('Supprimer cet article ?');">
+            <button class="btn btn-danger" style="padding:.2rem .5rem;" type="submit">Suppr.</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">Aucun article.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between;">
+    <h2>Tags / catégories</h2>
+    <a class="btn btn-primary" href="{{ url_for('tag_edit') }}">+ Nouveau tag</a>
+  </div>
+  <table>
+    <thead><tr><th>Ordre</th><th>Nom</th><th>Articles</th><th></th></tr></thead>
+    <tbody>
+      {% for t in tags %}
+      <tr>
+        <td>{{ t.ordre }}</td>
+        <td>{{ t.nom }}</td>
+        <td class="muted">{{ t.articles|length }}</td>
+        <td class="row">
+          <a href="{{ url_for('preview_tag', slug=t.slug) }}" target="_blank">Aperçu</a>
+          <a href="{{ url_for('tag_edit', tid=t.id) }}">Éditer</a>
+          <form class="inline" method="post" action="{{ url_for('tag_delete', tid=t.id) }}" onsubmit="return confirm('Supprimer ce tag ?');">
+            <button class="btn btn-danger" style="padding:.2rem .5rem;" type="submit">Suppr.</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">Aucun tag.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between;">
+    <h2>Pages libres</h2>
+    <a class="btn btn-primary" href="{{ url_for('page_edit') }}">+ Nouvelle page</a>
+  </div>
+  <table>
+    <thead><tr><th>Ordre</th><th>Titre</th><th></th></tr></thead>
+    <tbody>
+      {% for p in pages %}
+      <tr>
+        <td>{{ p.ordre }}</td>
+        <td>{{ p.titre }}</td>
+        <td class="row">
+          <a href="{{ url_for('preview_page', slug=p.slug) }}" target="_blank">Aperçu</a>
+          <a href="{{ url_for('page_edit', pid=p.id) }}">Éditer</a>
+          <form class="inline" method="post" action="{{ url_for('page_delete', pid=p.id) }}" onsubmit="return confirm('Supprimer cette page ?');">
+            <button class="btn btn-danger" style="padding:.2rem .5rem;" type="submit">Suppr.</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="muted">Aucune page.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

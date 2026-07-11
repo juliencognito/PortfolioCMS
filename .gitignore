@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+SECRETS.md
+project/instance/secret_key
+project/output.tmp/
+project/output.old/
+project-tobi/

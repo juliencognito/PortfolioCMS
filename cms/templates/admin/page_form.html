@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+{% from "admin/_toolbar.html" import toolbar %}
+{% block title %}{{ "Éditer la page" if page else "Nouvelle page" }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>{{ "Éditer la page" if page else "Nouvelle page" }}</h1>
+  <form method="post" enctype="multipart/form-data">
+    <label for="titre">Titre</label>
+    <input id="titre" name="titre" type="text" value="{{ page.titre if page else '' }}" required>
+
+    <label for="image">Image (peut être vide)</label>
+    {% if page and page.image %}
+      <div class="thumbs"><figure><img src="{{ url_for('uploads', filename=img_variant(page.image, 'small')) }}" alt=""></figure></div>
+      <p class="muted" style="font-size:.85rem;">Charger un fichier remplace l'image actuelle.</p>
+    {% endif %}
+    <input id="image" name="image" type="file" accept="image/*">
+
+    <label for="texte">Texte</label>
+    {{ toolbar('texte', url_for('page_texte_image', pid=page.id) if page else None) }}
+    <textarea id="texte" name="texte">{{ page.texte if page else '' }}</textarea>
+    <p class="editor-hint">Sélectionne du texte puis clique un bouton — ou écris directement **gras**, *italique*, ++souligné++, `code`, ### titre (h3-h5), --- séparateur, 🖼 insère une image (page déjà enregistrée uniquement).</p>
+
+    <label for="gallery">Galerie — dossier d'images (sélection multiple)</label>
+    <input id="gallery" name="gallery" type="file" accept="image/*" multiple>
+
+    {% if page and page.gallery|rejectattr('en_texte')|list %}
+      <div class="thumbs">
+        {% for g in page.gallery|rejectattr('en_texte') %}
+          <figure>
+            <img src="{{ url_for('uploads', filename=img_variant(g.filename, 'small')) }}" alt="">
+            <button class="btn btn-danger" style="padding:.15rem .4rem; font-size:.75rem; margin-top:.3rem; width:100%;"
+              type="submit" formaction="{{ url_for('gallery_delete', gid=g.id) }}" formmethod="post" formnovalidate
+              onclick="return confirm('Retirer cette image ?');">Retirer</button>
+          </figure>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <label for="ordre">Ordre dans la navigation</label>
+    <input id="ordre" name="ordre" type="number" value="{{ page.ordre if page else 0 }}">
+
+    <div class="row" style="margin-top:1.25rem;">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <button class="btn btn-ghost" type="submit" formtarget="_blank"
+        formaction="{{ url_for('page_preview', pid=page.id) if page else url_for('page_preview') }}">
+        Prévisualiser
+      </button>
+      <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

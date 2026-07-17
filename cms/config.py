@@ -25,6 +25,11 @@ class Config:
     # PROD: set PORTFOLIO_SECRET_KEY
     SECRET_KEY = os.environ.get("PORTFOLIO_SECRET_KEY", "dev-change-me-en-prod")
 
+    # set by builder/desktop_launcher.py only: shows the "Quitter" button in
+    # the admin topbar (no controlling terminal when launched by double-click,
+    # so no other way to stop the server — see docs/desktop.md)
+    DESKTOP_MODE = os.environ.get("PORTFOLIO_DESKTOP") == "1"
+
     DB_PATH = Path(os.environ.get("PORTFOLIO_DB", str(PROJECT_DIR / "instance" / "portfolio.sqlite")))
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{DB_PATH}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False

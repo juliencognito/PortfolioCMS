@@ -89,6 +89,12 @@
         <form class="inline" method="post" action="{{ url_for('publish') }}">
           <button class="btn btn-pub" type="submit">Publier</button>
         </form>
+        {% if desktop_mode %}
+          <form class="inline" method="post" action="{{ url_for('shutdown') }}"
+            onsubmit="return confirm('Fermer PortfolioCMS ?');">
+            <button class="btn btn-danger" type="submit">Quitter</button>
+          </form>
+        {% endif %}
       </div>
     </nav>
   </header>

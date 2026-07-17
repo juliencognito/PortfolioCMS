@@ -6,9 +6,13 @@ veut simplement le lancer. Pour le construire toi-même, voir
 
 ## C'est quoi
 
-Un exécutable autonome (pas besoin de Python, de venv ni de terminal) qui
-ouvre l'admin du CMS dans une fenêtre native. Pas d'authentification : ça
-s'ouvre directement sur le tableau de bord.
+Un exécutable autonome (pas besoin de Python ni de venv) qui démarre le
+serveur admin et ouvre le tableau de bord dans ton navigateur par défaut —
+pas d'authentification, ça s'ouvre directement dessus. Une petite fenêtre de
+console reste ouverte pendant que le serveur tourne (elle affiche le journal
+du serveur) : ferme-la ou fais **Ctrl+C** dedans pour quitter — fermer
+l'onglet du navigateur ne suffit pas, le serveur continue de tourner tant
+que cette fenêtre est ouverte.
 
 Tout ce qui est propre à **un site** (base, uploads, site publié) vit dans
 un dossier `project/` à côté de l'exécutable :
@@ -34,33 +38,41 @@ cd PortfolioCMS/
 ./PortfolioCMS
 ```
 
-Ou double-clic depuis le gestionnaire de fichiers. Certains gestionnaires
-(Nautilus/GNOME notamment) demandent une confirmation de confiance la
-première fois avant d'exécuter un binaire inconnu — normal, à accepter une
-fois.
+Lancement **depuis un terminal recommandé** : c'est ce qui donne la fenêtre
+de console (le journal du serveur, Ctrl+C pour quitter) décrite ci-dessus.
+Un double-clic depuis le gestionnaire de fichiers lance aussi le serveur et
+ouvre le navigateur, mais sans terminal attaché il n'y a alors aucune
+fenêtre visible pour l'arrêter — il faut le tuer via le gestionnaire de
+tâches. Certains gestionnaires (Nautilus/GNOME notamment) demandent aussi
+une confirmation de confiance la première fois avant d'exécuter un binaire
+inconnu — normal, à accepter une fois.
 
 ## Windows
-
-⚠️ **Avant d'extraire le zip téléchargé**, débloque-le : clic droit dessus →
-*Propriétés* → cocher **Débloquer** → OK (ou, une fois déjà extrait,
-`Get-ChildItem -Recurse .\PortfolioCMS | Unblock-File` en PowerShell). Sans
-ça, Windows marque le zip comme provenant d'internet (*Mark of the Web*) et
-le pont .NET utilisé par pywebview refuse de s'initialiser au lancement
-(`Failed to resolve Python.Runtime.Loader.Initialize`), même si le paquet
-est parfaitement sain.
 
 Le paquet n'étant pas signé (voir [builder.md](builder.md)), Windows
 affichera un avertissement SmartScreen au premier lancement : « Informations
 complémentaires » → « Exécuter quand même ».
 
-Double-clic sur `PortfolioCMS.exe` pour lancer.
+Double-clic sur `PortfolioCMS.exe` pour lancer — une fenêtre de console
+s'ouvre automatiquement (le journal du serveur, Ctrl+C ou fermer la fenêtre
+pour quitter).
+
+⚠️ **Piège vécu et corrigé** : un build produit par une version antérieure de
+`desktop.spec` pouvait échouer avec `Failed to load Python DLL
+'...\_internal\python313.dll' — LoadLibrary: Le module spécifié est
+introuvable`, `python313.dll` étant **réellement absent** de `_internal/`
+(pas un souci runtime/antivirus — voir CLAUDE.md pour la cause exacte, déjà
+corrigée dans `desktop.spec`). Si tu retombes sur cette erreur, télécharge
+un zip généré par un run récent de `build-desktop-windows.yml` plutôt que
+de réutiliser un ancien zip.
 
 ## macOS
 
 Le paquet n'étant pas signé/notarisé, macOS bloquera via Gatekeeper au
 premier lancement : clic droit sur `PortfolioCMS` → *Ouvrir* (plutôt qu'un
 simple double-clic, qui refuserait silencieusement) → confirmer dans la
-boîte de dialogue.
+boîte de dialogue. Comme sur Linux, lancer depuis un Terminal est ce qui
+donne la fenêtre de console pour arrêter le serveur proprement.
 
 ⚠️ Build macOS pas encore testé en conditions réelles (voir
 [builder.md](builder.md)) — cette procédure est la procédure standard

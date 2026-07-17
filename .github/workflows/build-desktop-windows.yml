@@ -20,9 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # pywebview déclare pythonnet avec un environment marker
-      # (sys_platform == "win32") dans ses propres dépendances : un simple
-      # pip install le récupère automatiquement, rien à installer à part.
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
@@ -45,11 +42,6 @@ jobs:
       # contienne bien un dossier PortfolioCMS/ à la racine, cohérent avec le
       # README. Pas de zip manuel ici : actions/upload-artifact zippe déjà le
       # téléchargement lui-même -- zipper en plus créerait un zip dans le zip.
-      #
-      # ⚠️ Windows marque tout fichier téléchargé (Mark of the Web) : après
-      # extraction, le loader .NET de pythonnet refuse d'initialiser
-      # Python.Runtime.dll tant que le zip n'est pas débloqué (clic droit sur
-      # le zip -> Propriétés -> Débloquer, avant extraction). Voir README.
       - uses: actions/upload-artifact@v7
         with:
           name: portfolio-cms-windows-x64

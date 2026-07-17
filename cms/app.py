@@ -1,4 +1,6 @@
 """Admin interface for the portfolio CMS (Flask). No auth — local use only."""
+import os
+import threading
 from pathlib import Path
 
 import click
@@ -89,6 +91,10 @@ def create_app():
     db.init_app(app)
     app.jinja_env.filters["paragraphs"] = paragraphs
     app.jinja_env.globals["img_variant"] = variant_name
+
+    @app.context_processor
+    def _inject_desktop_mode():
+        return {"desktop_mode": app.config.get("DESKTOP_MODE", False)}
 
     # ----------------------------------------------------------- dashboard
     @app.route("/")
@@ -441,6 +447,16 @@ def create_app():
                 result = f"{result} En ligne : {pages_url}"
             flash(f"{message} {result}" if result else message, "ok")
         return redirect(url_for("dashboard"))
+
+    # ---------------------------------------------------------- desktop only
+    @app.route("/shutdown", methods=["POST"])
+    def shutdown():
+        """Stop the process (desktop package only — no terminal to Ctrl+C when
+        launched by double-click, see docs/desktop.md)."""
+        if not app.config.get("DESKTOP_MODE"):
+            return redirect(url_for("dashboard"))
+        threading.Timer(0.3, os._exit, args=(0,)).start()  # let the response flush first
+        return "<p>PortfolioCMS est arrêté. Tu peux fermer cette fenêtre.</p>"
 
     # ------------------------------------------------- serve uploads (preview)
     @app.route("/uploads/<path:filename>")

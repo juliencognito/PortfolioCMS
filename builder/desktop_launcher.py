@@ -5,9 +5,8 @@ import socket
 import sys
 import threading
 import time
+import webbrowser
 from pathlib import Path
-
-import webview
 
 if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys.executable).resolve().parent
@@ -33,6 +32,7 @@ os.environ["PORTFOLIO_SECRET_KEY"] = secret_key
 os.environ["PORTFOLIO_DB"] = str(INSTANCE_DIR / "portfolio.sqlite")
 os.environ["PORTFOLIO_UPLOADS"] = str(PROJECT_DIR / "uploads")
 os.environ["PORTFOLIO_OUTPUT"] = str(PROJECT_DIR / "output")
+os.environ["PORTFOLIO_DESKTOP"] = "1"
 
 from cms.app import app as flask_app, seed_css, seed_seo  # noqa: E402
 from cms.models import Home, db  # noqa: E402
@@ -48,7 +48,7 @@ def _init_db():
 
 
 def _wait_for_server(host, port, timeout=5.0):
-    """Wait for the Flask thread to accept connections before opening the window."""
+    """Wait for the Flask thread to accept connections before opening the browser."""
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -58,19 +58,20 @@ def _wait_for_server(host, port, timeout=5.0):
             time.sleep(0.05)
 
 
+def _open_browser_when_ready():
+    _wait_for_server("127.0.0.1", 5000)
+    webbrowser.open("http://127.0.0.1:5000")
+
+
 def main():
     with flask_app.app_context():
         _init_db()
 
-    threading.Thread(
-        target=flask_app.run,
-        kwargs={"host": "127.0.0.1", "port": 5000, "debug": False, "use_reloader": False},
-        daemon=True,
-    ).start()
-    _wait_for_server("127.0.0.1", 5000)
+    threading.Thread(target=_open_browser_when_ready, daemon=True).start()
 
-    webview.create_window("Portfolio CMS", "http://127.0.0.1:5000")
-    webview.start()
+    print("PortfolioCMS est lancé sur http://127.0.0.1:5000")
+    print("Laisse cette fenêtre ouverte pendant que tu travailles. Ctrl+C pour quitter.")
+    flask_app.run(host="127.0.0.1", port=5000, debug=False, use_reloader=False)
 
 
 if __name__ == "__main__":

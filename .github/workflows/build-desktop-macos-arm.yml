@@ -20,9 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # pywebview déclare les frameworks pyobjc avec un environment marker
-      # (sys_platform == "darwin") dans ses propres dépendances : un simple
-      # pip install les récupère automatiquement, rien à installer à part.
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"

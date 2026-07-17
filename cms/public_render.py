@@ -16,6 +16,7 @@ _LINK_RE = re.compile(r"\[(.+?)\]\((.+?)\)")
 _HEADING_RE = re.compile(r"^(#{3,5})\s+(.*)$", re.DOTALL)
 _HR_RE = re.compile(r"^-{3,}$")
 _IMAGE_RE = re.compile(r"^\[\[image:(.+?)\]\]$")
+_HTML_BLOCK_RE = re.compile(r"^\[\[html\]\]\s*\n(.*?)\n\s*\[\[/html\]\]$", re.DOTALL)
 
 
 class Linker:
@@ -81,6 +82,9 @@ def _inline_markup(line: str) -> str:
 
 
 def _render_block(block: str, link: "Linker") -> str:
+    html_block = _HTML_BLOCK_RE.match(block)
+    if html_block:
+        return html_block.group(1)  # raw, not escaped: admin-authored, same trust level as SiteCss.contenu
     image = _IMAGE_RE.match(block)
     if image:
         name = escape(image.group(1).strip())
@@ -127,7 +131,8 @@ def plain_summary(text: str, max_len: int = 160) -> str:
     if not text:
         return ""
     first_block = text.replace("\r\n", "\n").split("\n\n", 1)[0].strip()
-    if _IMAGE_RE.match(first_block) or _HR_RE.match(first_block) or _HEADING_RE.match(first_block):
+    if (_IMAGE_RE.match(first_block) or _HR_RE.match(first_block)
+            or _HEADING_RE.match(first_block) or _HTML_BLOCK_RE.match(first_block)):
         return ""
     plain = _LINK_RE.sub(r"\1", first_block)
     plain = _CODE_RE.sub(r"\1", plain)

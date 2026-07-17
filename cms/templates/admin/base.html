@@ -141,6 +141,11 @@
       wrapSelection(id, "[", "](" + url + ")");
     }
 
+    // cursor lands between the markers so a pasted <iframe> (or any HTML) can span lines
+    function insertHtmlBlock(id) {
+      insertBlock(id, "[[html]]\n", "\n[[/html]]");
+    }
+
     // image pool: bulk upload, append new thumbnails without a page reload
     (function () {
       function buildPoolItem(img, pool) {

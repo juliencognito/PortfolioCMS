@@ -76,8 +76,13 @@ def _keep_binary(entry):
     dest, source, typecode = entry
     if typecode != "BINARY":
         return True  # EXTENSION (Python modules, e.g. gi/_gi.so): always needed
-    if os.path.basename(dest).lower().startswith("libpython"):
-        return True  # the interpreter itself
+    if "python3" in os.path.basename(dest).lower():
+        # the interpreter itself: libpython3.13.so.1.0 (Linux), python313.dll
+        # (Windows), libpython3.13.dylib (macOS) — substring match on purpose,
+        # a prefix-only check ("libpython") missed python313.dll on Windows
+        # entirely (doesn't start with "lib"), silently shipping a broken
+        # build (piège vécu — see CLAUDE.md)
+        return True
     return os.path.normpath(source).startswith(_VENV_PREFIX)  # wheel-vendored, not system-provided
 
 

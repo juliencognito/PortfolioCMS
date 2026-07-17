@@ -1,8 +1,7 @@
 name: Build desktop package (Windows)
 
-# Déclenchement manuel uniquement (onglet Actions -> Run workflow). Un
-# workflow par plateforme pour pouvoir lancer juste celle dont on a besoin —
-# voir CLAUDE.md "Application desktop" / "Décisions & pièges" pour le contexte.
+# Déclenchement manuel uniquement (onglet Actions -> Run workflow) ; un
+# workflow par plateforme pour ne lancer que celle dont on a besoin.
 on:
   workflow_dispatch:
     inputs:
@@ -38,18 +37,14 @@ jobs:
           source .venv/Scripts/activate
           pyinstaller builder/desktop.spec
 
-      # path: dist (pas dist/PortfolioCMS) pour que le zip téléchargé
-      # contienne bien un dossier PortfolioCMS/ à la racine, cohérent avec le
-      # README. Pas de zip manuel ici : actions/upload-artifact zippe déjà le
-      # téléchargement lui-même -- zipper en plus créerait un zip dans le zip.
+      # path: dist (pas dist/PortfolioCMS), sinon zip dans le zip :
+      # actions/upload-artifact zippe déjà le téléchargement lui-même.
       - uses: actions/upload-artifact@v7
         with:
           name: portfolio-cms-windows-x64
           path: dist
 
-      # Zip dédié à la release (un asset de Release doit être un fichier
-      # unique, pas un dossier -- contrairement à actions/upload-artifact qui
-      # zippe lui-même à la volée).
+      # un asset de Release est un fichier, pas un dossier
       - name: Zip for release
         if: inputs.release_tag != ''
         shell: pwsh

@@ -5,63 +5,41 @@ Pour ce que fait le CMS une fois lancé, voir [app.md](app.md).
 ## Installation
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-export PORTFOLIO_SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(48))')"
-flask --app cms.app init-db
-flask --app cms.app run             # http://127.0.0.1:5000
+./dev.sh                # http://127.0.0.1:5000
+./dev.sh ../autre-site   # contre les données d'un autre site cloné à côté
 ```
 
-Rédiger, puis cliquer **Publier** (ou `flask --app cms.app publish`). Le
-site statique est écrit dans `project/output/`.
-
-Pour itérer avec le rechargement automatique : `flask --app cms.app run
---debug`.
+Crée le venv, installe les dépendances, initialise la base si besoin,
+lance en mode debug — voir les commentaires en tête de `dev.sh` pour le
+détail. Rédiger, puis cliquer **Publier** (ou `flask --app cms.app
+publish`) : le site statique est écrit dans `project/output/`.
 
 ## Structure du code
 
 - `cms/` — le package de l'app Flask (voir [app.md](app.md) pour ce qu'il
   fait). Imports internes en relatif (`from .config import ...`) : lancer
-  toujours via `flask --app cms.app ...` ou `python -m cms.xxx` depuis la
-  racine du dépôt, pas `python cms/app.py` directement.
+  toujours via `./dev.sh`, `flask --app cms.app ...` ou `python -m cms.xxx`
+  depuis la racine du dépôt, pas `python cms/app.py` directement.
 - `builder/` — packaging de l'exécutable desktop (PyInstaller), voir
   [builder.md](builder.md).
 - `project/` — données d'**un** site (base, uploads, site publié), jamais de
-  code ici. Les variables d'environnement (voir [app.md](app.md)) permettent
-  de pointer vers un autre dossier `project/` si besoin.
+  code ici.
 
 ## Variables d'environnement
 
-Voir le tableau dans [app.md](app.md) — les mêmes variables s'appliquent en
-dev, juste positionnées à la main (`export ...`) plutôt que par
-`builder/desktop_launcher.py`.
-
-## Développer contre un autre site (`PORTFOLIO_BASE_DIR`)
-
-Pour lancer ce checkout de code contre les données réelles d'un autre site
-cloné à côté (ex. `../marc-geneix/`, dépôt content-only avec son propre
-`project/` et son propre `.git`) :
-
-```bash
-PORTFOLIO_BASE_DIR=../marc-geneix flask --app cms.app run
-```
-
-`PROJECT_DIR` (donc `project/instance`, `project/uploads`, `project/output`)
-se recalcule automatiquement sous `PORTFOLIO_BASE_DIR` — pas besoin de
-positionner `PORTFOLIO_DB`/`PORTFOLIO_UPLOADS`/`PORTFOLIO_OUTPUT` en plus.
+Voir le tableau dans [app.md](app.md). `dev.sh` positionne
+`PORTFOLIO_SECRET_KEY` et `PORTFOLIO_BASE_DIR` (si un argument lui est
+passé) ; les autres se positionnent à la main (`export ...`) si besoin.
 
 ⚠️ **Ne pas pointer seulement `PORTFOLIO_DB`/`PORTFOLIO_UPLOADS`/
 `PORTFOLIO_OUTPUT` vers un autre site sans `PORTFOLIO_BASE_DIR`** (via un
-lien symbolique `project -> ../autre-site/project`, par exemple) : le
-bouton **Publier** cible toujours `BASE_DIR` pour le `git push`
-(`cms/git_publish.py`), qui resterait ce checkout de code — pas le dépôt de
-contenu de l'autre site. Avec un remote/token déjà configurés dans
-`GitConfig` (chargé depuis la base de l'autre site via le lien symbolique),
-cliquer Publier pousserait alors le mauvais dépôt vers le remote GitLab de
-l'autre site, avec repli en force-push si les historiques divergent.
-`PORTFOLIO_BASE_DIR` évite ce piège en déplaçant `project/` **et** la cible
-git ensemble.
+lien symbolique `project -> ../autre-site/project`, par exemple) :
+**Publier** cible toujours `BASE_DIR` pour le `git push` — donc ce checkout
+de code, pas le dépôt de l'autre site — avec le remote/token de l'autre
+site chargés depuis sa base. Résultat : Publier pousserait le mauvais
+contenu vers le GitLab de l'autre site (avec repli en force-push si les
+historiques divergent). `./dev.sh ../autre-site` évite ce piège en
+déplaçant `project/` et la cible git ensemble.
 
 ## Base existante / migrations
 

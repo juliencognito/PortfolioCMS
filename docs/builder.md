@@ -8,24 +8,19 @@ pour qui l'utilise.
 ## Principe
 
 `builder/desktop_launcher.py` est un petit lanceur (démarre Flask, ouvre le
-navigateur par défaut sur `http://127.0.0.1:5000` via le module stdlib
-`webbrowser` — aucun toolkit GUI, pas de fenêtre native) qui remplace
-`flask --app cms.app run` pour un usage sans venv Python ni ligne de
-commande. `builder/desktop.spec` (PyInstaller) le fige en exécutable
-autonome, avec `cms/templates` et `cms/static` embarqués. Une petite console
-reste ouverte pendant que le serveur tourne (voir [desktop.md](desktop.md)) —
-zéro dépendance de toolkit GUI (ni GTK/WebKit sur Linux, ni pythonnet sur
-Windows, ni pyobjc sur macOS), contrairement à une version antérieure basée
-sur `pywebview` (fenêtre native) qui imposait ces trois-là et causait des
-plantages au runtime sur Linux (conflit de version entre libs bundlées et
-libs système du poste cible — piège vécu, documenté dans CLAUDE.md avant
-d'être contourné par ce changement d'architecture plutôt que patché plus
-avant).
+navigateur par défaut via le module stdlib `webbrowser` — aucun toolkit GUI)
+qui remplace `flask --app cms.app run` pour un usage sans venv Python ni
+ligne de commande. `builder/desktop.spec` (PyInstaller) le fige en
+exécutable autonome, avec `cms/templates`/`cms/static` embarqués. Une petite
+console reste ouverte pendant que le serveur tourne (voir
+[desktop.md](desktop.md)).
 
-Ce paquet est un figé destiné au partage, pas un outil d'itération : pour
-développer/tester des changements, reste sur `flask --app cms.app run
---debug` (ou `python3 builder/desktop_launcher.py`) depuis les sources —
-voir [dev.md](dev.md).
+Ce paquet est figé, destiné au partage, pas un outil d'itération : pour
+développer/tester des changements, `./dev.sh` depuis les sources (voir
+[dev.md](dev.md)) — `python3 builder/desktop_launcher.py` tourne aussi
+depuis les sources mais sans rechargement automatique (`debug=False`), utile
+seulement pour tester le comportement du lanceur lui-même (ouverture du
+navigateur, console).
 
 ## Construire en local
 
@@ -81,10 +76,8 @@ déjà) la Release correspondant à ce tag et y attache son zip. Lancer les 4
 workflows avec le **même tag** accumule les 4 zips sur une seule Release (un
 workflow n'écrase jamais les assets déposés par les autres).
 
-Linux confirmé fonctionnel en local (build + lancement réel, voir
-CLAUDE.md) depuis le retrait de pywebview ; Windows et macOS (Intel/ARM) à
-revérifier via le vrai pipeline CI suite à ce changement (l'ancienne
-confirmation portait sur la version pywebview, désormais obsolète).
+Linux et Windows confirmés fonctionnels (build + lancement réel) ; macOS
+(Intel/ARM) pas encore testé.
 
 ## Signature de code (pas encore fait)
 

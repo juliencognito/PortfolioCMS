@@ -34,11 +34,7 @@ Admin Flask ──(Publier)──▶ project/output/ (HTML statique) ──▶ n
 ## Démarrage rapide (dev)
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-export PORTFOLIO_SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(48))')"
-flask --app cms.app init-db
-flask --app cms.app run             # http://127.0.0.1:5000
+./dev.sh   # http://127.0.0.1:5000
 ```
 
 Détails dans [docs/dev.md](docs/dev.md).

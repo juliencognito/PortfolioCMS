@@ -58,19 +58,12 @@ affiché dans l'onglet du navigateur, l'en-tête et le pied de page de toutes
 les pages), un réglage global plutôt qu'un champ de la page d'accueil.
 
 - **URL publique du site** (`base_url`, ex. `https://mon-site.gitlab.io/portfolio`,
-  sans slash final) : nécessaire pour générer `sitemap.xml` et les URLs
-  canoniques/Open Graph au build. Tant qu'elle est vide, ni l'un ni l'autre
-  n'est produit — pas d'erreur, juste pas de sitemap tant que le site n'a pas
-  d'adresse connue.
-- **Description par défaut** : utilisée seulement quand une page n'a rien à
-  en tirer (ex. accueil sans présentation).
-- **Image de partage par défaut** : utilisée seulement pour les pages sans
-  image propre (accueil, tags — articles/pages libres utilisent déjà la
-  leur).
-- **Compte Twitter/X**, **directive robots** (indexable ou non — utile le
-  temps de préparer un site avant de le rendre public), **vérification
-  Google Search Console** (colle le contenu de la balise fournie par
-  Google).
+  sans slash final) : nécessaire pour `sitemap.xml` et les URLs canoniques/
+  Open Graph au build. Vide = pas de sitemap, sans erreur.
+- **Description**/**image de partage par défaut** : utilisées seulement si
+  une page n'a rien à en tirer (ex. accueil sans présentation/image).
+- **Compte Twitter/X**, **directive robots**, **vérification Google Search
+  Console** (colle le contenu de la balise fournie par Google).
 
 URLs du site publié : `tag/<slug>.html`, `projets/<slug>.html`,
 `<slug>.html` pour les pages libres, `index.html` pour l'accueil.
@@ -84,7 +77,7 @@ URLs du site publié : `tag/<slug>.html`, `projets/<slug>.html`,
 | `PORTFOLIO_DB` | `project/instance/portfolio.sqlite` | chemin de la base |
 | `PORTFOLIO_UPLOADS` | `project/uploads/` | images sources |
 | `PORTFOLIO_OUTPUT` | `project/output/` | site statique généré |
-| `PORTFOLIO_IMG_LARGE`/`_MEDIUM`/`_SMALL` | `1440`/`600`/`200` | largeur max des déclinaisons |
+| `PORTFOLIO_IMG_LARGE`/`_MEDIUM`/`_SMALL` | `1920`/`700`/`480` | largeur max des déclinaisons |
 | `PORTFOLIO_MAX_UPLOAD` | `67108864` (64 Mo) | taille max d'un upload (octets) |
 
 ## Sauvegarde
@@ -100,11 +93,10 @@ rsync -a project/uploads/ /backup/uploads/                          # images
 
 Le bouton **Publier** peut, en plus de régénérer `project/output/`, committer
 et pousser ce contenu vers un dépôt GitLab qui héberge le site via GitLab
-Pages — utile pour l'app desktop (voir [desktop.md](desktop.md)), où
-l'utilisateur n'a ni git ni ligne de commande. Toute la mise en place se fait
-**depuis l'interface web de GitLab**, aucune commande git n'est nécessaire :
-le CMS initialise, committe et pousse lui-même le dépôt (via **dulwich**, une
-implémentation Git pure Python — voir `cms/git_publish.py`).
+Pages — utile pour l'app desktop, où l'utilisateur n'a ni git ni ligne de
+commande. Toute la mise en place se fait **depuis l'interface web de
+GitLab** : le CMS initialise, committe et pousse lui-même le dépôt (via
+**dulwich**, une implémentation Git pure Python).
 
 ### 1. Créer le dépôt sur GitLab
 
@@ -196,15 +188,11 @@ Le CMS a deux parties distinctes, qui n'ont pas besoin du même hébergement :
   C'est tout l'intérêt de la génération statique : zéro dépendance Python
   côté visiteur.
 - **Admin (Flask)** : **local uniquement**, via l'app desktop (voir
-  [desktop.md](desktop.md)) — on rédige sur sa machine puis on
-  publie/exporte `project/output/`. ⚠️ **Ne jamais héberger l'admin sur un
-  serveur accessible depuis internet sans protection** : depuis que
-  l'authentification a été retirée de l'app (usage local assumé), quiconque
-  atteint l'adresse a un accès complet (créer/modifier/supprimer articles,
-  tags, pages, CSS). Si un besoin d'édition à distance se présente un jour,
-  protéger l'accès **au niveau du serveur web** (Basic Auth façon
-  `.htaccess` en Apache, ou `auth_basic` en nginx, sur le path de l'admin) —
-  pas la peine de réintroduire une authentification dans l'app elle-même.
+  [desktop.md](desktop.md)). ⚠️ **Ne jamais l'héberger sur un serveur
+  accessible depuis internet sans protection** : sans authentification,
+  quiconque atteint l'adresse a un accès complet. Besoin d'édition à
+  distance un jour ? Protéger l'accès **au niveau du serveur web** (Basic
+  Auth) plutôt que de réintroduire une authentification dans l'app.
 
 ## Pistes d'évolution (volontairement non incluses)
 

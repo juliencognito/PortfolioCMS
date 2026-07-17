@@ -3,13 +3,8 @@ import os
 import sys
 from pathlib import Path
 
-# frozen (PyInstaller): __file__ is in _internal/, not next to the executable.
-# Dev mode: this file lives in cms/, so BASE_DIR is its parent (repo root).
-# PORTFOLIO_BASE_DIR overrides both: lets a single source checkout develop
-# against another site's own project/ + git repo (e.g. one cloned next to
-# this one) — project/ AND git_publish's repo_dir move together, unlike
-# pointing PORTFOLIO_DB/UPLOADS/OUTPUT there individually, which would leave
-# "Publier" pushing into *this* checkout's own git repo instead of the site's.
+# PORTFOLIO_BASE_DIR: develop against another site's project/+git repo
+# (moves BASE_DIR and PROJECT_DIR together, so "Publier" targets that repo).
 if os.environ.get("PORTFOLIO_BASE_DIR"):
     BASE_DIR = Path(os.environ["PORTFOLIO_BASE_DIR"]).resolve()
 elif getattr(sys, "frozen", False):
@@ -25,9 +20,7 @@ class Config:
     # PROD: set PORTFOLIO_SECRET_KEY
     SECRET_KEY = os.environ.get("PORTFOLIO_SECRET_KEY", "dev-change-me-en-prod")
 
-    # set by builder/desktop_launcher.py only: shows the "Quitter" button in
-    # the admin topbar (no controlling terminal when launched by double-click,
-    # so no other way to stop the server — see docs/desktop.md)
+    # set by desktop_launcher.py: shows the "Quitter" button (see docs/desktop.md)
     DESKTOP_MODE = os.environ.get("PORTFOLIO_DESKTOP") == "1"
 
     DB_PATH = Path(os.environ.get("PORTFOLIO_DB", str(PROJECT_DIR / "instance" / "portfolio.sqlite")))
@@ -40,10 +33,7 @@ class Config:
     # whole-request cap; behind nginx also set client_max_body_size
     MAX_CONTENT_LENGTH = int(os.environ.get("PORTFOLIO_MAX_UPLOAD", 64 * 1024 * 1024))
 
-    # max width in px per variant; no upscaling. Sized for actual usage at 2x
-    # (retina) pixel density: small = gallery grid thumbs (minmax 220px CSS),
-    # medium = card thumbs (minmax 260px CSS), large = cover image + lightbox
-    # (up to --maxw 1100px / 92vw).
+    # max width in px per variant, sized for 2x/retina display; no upscaling
     IMAGE_SIZES = {
         "large": int(os.environ.get("PORTFOLIO_IMG_LARGE", 1920)),
         "medium": int(os.environ.get("PORTFOLIO_IMG_MEDIUM", 700)),

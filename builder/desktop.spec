@@ -1,21 +1,12 @@
-# PyInstaller spec for the desktop launcher.
+# PyInstaller spec for the desktop launcher (pyinstaller builder/desktop.spec
+# from the repo root; pyinstaller is a build tool, not a requirements.txt dep).
 #
-# PyInstaller is a build tool, not a runtime dependency: install it separately
-# in the venv (`pip install pyinstaller`), don't add it to requirements.txt.
-#
-# Build:   pyinstaller builder/desktop.spec   (from the repo root)
-# Result:  dist/PortfolioCMS/ (the folder to zip and share):
-#            - PortfolioCMS   (executable to launch)
-#            - _internal/     (Python + deps + cms/templates, cms/static
-#                              bundled in — don't touch)
-#            - project/ (instance/, uploads/, output/) created next to the
-#              executable on first launch, NOT inside _internal/
-#          Launch: double-click from the file manager — desktop_launcher.py
-#          starts the Flask server and opens it in the default browser (see
-#          console=True below: a small console window stays open, showing
-#          the server log — close it or Ctrl+C to quit). No GUI toolkit
-#          dependency (no GTK/WebKit, no pythonnet, no pyobjc): just the
-#          stdlib `webbrowser` module, so this is the same on every OS.
+# Result: dist/PortfolioCMS/ — PortfolioCMS (executable) + _internal/ (deps,
+# cms/templates, cms/static) + project/ (created next to the executable on
+# first launch, not inside _internal/). desktop_launcher.py starts Flask and
+# opens the default browser; console=True keeps a small log window open
+# (Ctrl+C to quit) — no GUI toolkit dependency (webbrowser is stdlib), same
+# on every OS.
 import os
 
 ROOT = os.path.dirname(SPECPATH)  # repo root (SPECPATH = builder/)
@@ -37,10 +28,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    # numpy: never imported by our code, but present in some environments —
-    # without this exclusion, the PIL hook bundles it "just in case" along
-    # with its BLAS/LAPACK/gfortran entourage (~25 MB) for numpy interop
-    # that's never used here.
+    # never imported by our code; the PIL hook bundles it "just in case" otherwise (~25 MB)
     excludes=["numpy"],
     cipher=block_cipher,
 )

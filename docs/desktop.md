@@ -9,10 +9,8 @@ veut simplement le lancer. Pour le construire toi-même, voir
 Un exécutable autonome (pas besoin de Python ni de venv) qui démarre le
 serveur admin et ouvre le tableau de bord dans ton navigateur par défaut —
 pas d'authentification, ça s'ouvre directement dessus. Une petite fenêtre de
-console reste ouverte pendant que le serveur tourne (elle affiche le journal
-du serveur) : ferme-la ou fais **Ctrl+C** dedans pour quitter — fermer
-l'onglet du navigateur ne suffit pas, le serveur continue de tourner tant
-que cette fenêtre est ouverte.
+console reste ouverte (journal du serveur) : ferme-la ou fais **Ctrl+C**
+pour quitter — fermer juste l'onglet du navigateur ne suffit pas.
 
 Tout ce qui est propre à **un site** (base, uploads, site publié) vit dans
 un dossier `project/` à côté de l'exécutable :
@@ -38,14 +36,12 @@ cd PortfolioCMS/
 ./PortfolioCMS
 ```
 
-Lancement **depuis un terminal recommandé** : c'est ce qui donne la fenêtre
-de console (le journal du serveur, Ctrl+C pour quitter) décrite ci-dessus.
-Un double-clic depuis le gestionnaire de fichiers lance aussi le serveur et
-ouvre le navigateur, mais sans terminal attaché il n'y a alors aucune
-fenêtre visible pour l'arrêter — il faut le tuer via le gestionnaire de
-tâches. Certains gestionnaires (Nautilus/GNOME notamment) demandent aussi
-une confirmation de confiance la première fois avant d'exécuter un binaire
-inconnu — normal, à accepter une fois.
+Lancement **depuis un terminal recommandé**, pour avoir la fenêtre de
+console décrite ci-dessus. Un double-clic depuis le gestionnaire de fichiers
+lance aussi le serveur et ouvre le navigateur, mais sans terminal attaché il
+n'y a aucune fenêtre pour l'arrêter — il faut le tuer via le gestionnaire de
+tâches. Certains gestionnaires (Nautilus/GNOME) demandent aussi une
+confirmation de confiance au premier lancement d'un binaire inconnu.
 
 ## Windows
 
@@ -56,15 +52,6 @@ complémentaires » → « Exécuter quand même ».
 Double-clic sur `PortfolioCMS.exe` pour lancer — une fenêtre de console
 s'ouvre automatiquement (le journal du serveur, Ctrl+C ou fermer la fenêtre
 pour quitter).
-
-⚠️ **Piège vécu et corrigé** : un build produit par une version antérieure de
-`desktop.spec` pouvait échouer avec `Failed to load Python DLL
-'...\_internal\python313.dll' — LoadLibrary: Le module spécifié est
-introuvable`, `python313.dll` étant **réellement absent** de `_internal/`
-(pas un souci runtime/antivirus — voir CLAUDE.md pour la cause exacte, déjà
-corrigée dans `desktop.spec`). Si tu retombes sur cette erreur, télécharge
-un zip généré par un run récent de `build-desktop-windows.yml` plutôt que
-de réutiliser un ancien zip.
 
 ## macOS
 
@@ -81,6 +68,5 @@ Gatekeeper, à confirmer sur un vrai run.
 ## Ce n'est pas un outil de dev
 
 Ce paquet est figé, destiné au partage — pas à l'itération. Pour
-développer/tester des changements de code, voir [dev.md](dev.md)
-(`flask --app cms.app run --debug` depuis les sources), pas via l'exécutable
-packagé.
+développer/tester des changements de code, `./dev.sh` depuis les sources
+(voir [dev.md](dev.md)), pas via l'exécutable packagé.
